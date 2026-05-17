@@ -14,7 +14,7 @@
 - **1 người** có thể vận hành với năng lực tương đương **15–20 người**
 - **AI Worker** không phải công cụ — mà là **nhân sự số** chuyên biệt
 - **Chi phí vận hành giảm 97%** nhưng chất lượng đầu ra không giảm
-- **SOP + Skill = Con người số** — mỗi AI worker có vai trò, trách nhiệm, và KPI rõ ràng
+- **SOP + SLI + KPI + Knowledge + Skill = Con người số** — mỗi AI worker có vai trò, trách nhiệm, quy trình, chất lượng, kiến thức, và mục tiêu rõ ràng
 
 Dự án này cung cấp **công cụ và phương pháp** để bất kỳ Solopreneur hay SME nào cũng có thể:
 
