@@ -1,0 +1,89 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "quality-standards.schema.json",
+  "title": "Quality Standards SLI/SLO/SLA (evidence-bound)",
+  "description": "Quality Standards deliverable của vibe-company-orchestrator. Ép mỗi SLO target phải có evidence (benchmark/historical/best-practice) + confidence_score. SLO là external promise (SLA) → confidence thấp = risk cao → cần review. Đồng bộ contract với vibe-aiworkforce.",
+  "type": "object",
+  "required": ["department", "standards", "evidence", "confidence_score", "need_review"],
+  "properties": {
+    "department": {"type": "string"},
+    "standards": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["sop_code", "sli", "slo", "error_budget", "measurement_method"],
+        "properties": {
+          "sop_code": {"type": "string", "description": "SOP-XXX-NNN"},
+          "sli": {
+            "type": "object",
+            "required": ["name", "definition"],
+            "properties": {
+              "name": {"type": "string"},
+              "definition": {"type": "string", "description": "Metric thật phản ánh chất lượng — KHÔNG 'tốt/đẹp'"}
+            }
+          },
+          "slo": {
+            "type": "object",
+            "required": ["target", "is_external_promise"],
+            "properties": {
+              "target": {"type": "string", "description": "vd: 99% accuracy. KHÔNG target 100% cho operational."},
+              "is_external_promise": {"type": "boolean", "description": "true → cần SLA"}
+            }
+          },
+          "sla": {
+            "type": "object",
+            "description": "Chỉ khi is_external_promise=true",
+            "properties": {
+              "promise": {"type": "string"},
+              "penalty": {"type": "string"}
+            }
+          },
+          "error_budget": {
+            "type": "string",
+            "description": "100% - SLO. vd: SLO 99% → budget 1%"
+          },
+          "measurement_method": {
+            "type": "object",
+            "required": ["how", "who", "frequency"],
+            "properties": {
+              "how": {"type": "string"},
+              "who": {"type": "string"},
+              "frequency": {"type": "string"}
+            }
+          },
+          "quality_gate": {
+            "type": "string",
+            "description": "Tiêu chí output phải pass trước khi accepted"
+          },
+          "prevention": {
+            "type": "string",
+            "description": "Làm sao lỗi không thể xảy ra (Eliminate > Substitute > Detect)"
+          }
+        }
+      }
+    },
+    "evidence": {
+      "type": "array",
+      "description": "Verbatim quote cho các SLO target. SLO không có benchmark → confidence thấp.",
+      "items": {
+        "type": "object",
+        "required": ["claim", "verbatim_quote", "source"],
+        "properties": {
+          "claim": {"type": "string"},
+          "verbatim_quote": {"type": "string", "minLength": 1},
+          "source": {"type": "string"},
+          "location": {"type": "string"}
+        }
+      }
+    },
+    "confidence_score": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1,
+      "description": "SLO là external promise → confidence < 0.7 = risk cao, BẮT BUỘC need_review"
+    },
+    "need_review": {"type": "boolean"},
+    "review_reason": {"type": "string"}
+  }
+}

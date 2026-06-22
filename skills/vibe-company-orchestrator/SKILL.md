@@ -8,7 +8,12 @@ description: >
   Chạy ở folder rống → sinh ra toàn bộ company structure.
   Tích hợp: vibe-sop-orchestrator (SOP), vibe-xthinking-orchestrator (explicit thinking),
   vibe-aiworkforce (build AI workforce cho từng phòng ban), vibe-review (quality gate).
+  Từ v2.0: đồng bộ Schema & Guardrail contract với vibe-aiworkforce — mọi OKR + Quality Standards
+  (SLI/SLO/SLA) phải mang evidence + confidence_score + need_review (chống hallucination target).
+  Validate artifact qua JSON Schema (schema/), audit trail qua execution_log.jsonl,
+  schema-aware handoff cho vibe-aiworkforce.
 type: skill
+version: 2.0.0
 ---
 
 # Vibe Company Orchestrator
@@ -226,6 +231,25 @@ Error Budget = 100% - SLO
   → Budget 25-50% → Review xem gì đang burn budget
   → Budget < 25% → FREEZE changes, focus quality
   → Budget exhausted → Complete freeze cho đến khi recover
+```
+
+**EVIDENCE-BOUND (v2.0 — đồng bộ vibe-aiworkforce):**
+```
+SLO target KHÔNG được set cảm tính. Mỗi SLO phải có evidence:
+  → "SLO accuracy ≥ 98%" → evidence: benchmark ngành, historical data, hoặc verbatim
+    quote từ brief/interview giải thích TẠI SAO 98%.
+  → Không có evidence → confidence_score thấp → need_review = true.
+  → SLO là external promise (SLA) → confidence thấp = RISK CAO → BẮT BUỘC review.
+
+Emit song song: output/quality-[dept].json (validate schema/quality-standards.schema.json)
+  {
+    "standards": [...],           // SLI/SLO/SLA/error_budget/measurement
+    "evidence": [                 // verbatim quote cho mỗi SLO target
+      {"claim": "SLO 98% accuracy", "verbatim_quote": "...", "source": "input/brief.md"}
+    ],
+    "confidence_score": 0.8,
+    "need_review": false
+  }
 ```
 
 ### 6.2 Quality Gates + Prevention trong SOP
@@ -477,6 +501,20 @@ OKR DEPARTMENT (mỗi phòng ban set mỗi quý):
     → Committed OKR: 0.0 - 1.0 (target = 1.0)
     → Stretch OKR: 0.0 - 1.0 (target = 0.7)
     → Cuối quý: score thực tế → retrospective → adjust quý sau
+```
+
+**EVIDENCE-BOUND (v2.0 — đồng bộ vibe-aiworkforce):**
+```
+Mọi OKR target (Committed + Stretch) phải có evidence:
+  → Committed OKR: evidence = capacity hiện tại / historical data
+    (vd: "Target 5 bài/tuần" ← "Team hiện xuất 5 bài/tuần" — verbatim từ brief)
+  → Stretch OKR (x10): evidence thường KHÔNG có benchmark → confidence_score thấp
+    → BẮT BUỘC need_review = true → human validate trước khi commit
+    → KHÔNG commit moonshot target mà không flag risk.
+
+Emit song song: output/company-okr.json + output/[dept]-okr.json
+  (validate schema/company-okr.schema.json — required: evidence[], confidence_score, need_review)
+  → confidence < 0.7 → vào output/review-queue.md cho CEO/founder duyệt
 ```
 
 ### 7.2 KRI — Key Result Indicators
@@ -733,6 +771,192 @@ _rules/README.md phải bổ sung Quality Standards table:
 | INC Code | Date | SOP | Root Cause | Prevention Applied |
 |----------|------|-----|-----------|-------------------|
 | [Link to report] | [Date] | [SOP Code] | [Systemic cause] | [What changed] |
+```
+
+---
+
+## 8. Schema, Evidence & Guardrail Layer — Đồng bộ với vibe-aiworkforce v2
+
+> **Why this section exists:** `vibe-aiworkforce` đã được upgrade lên chuẩn schema-driven + guardrail (8-component skeleton, JSON Schema validation, evidence/confidence/need_review, hooks, execution_log). `vibe-company-orchestrator` là **parent** delegate Phase 6 cho aiworkforce — nếu parent không nói cùng ngôn ngữ, contract đứt: OKR/SLA target sinh ra không có evidence, brief truyền xuống không schema-aware, không có audit trail.
+>
+> **Principle:** *"Trần sao âm vậy" phải âm cả phần guardrail.* Công ty do AI sinh ra phải có cùng cơ chế chống-hallucination như workforce do AI sinh ra.
+
+### 8.1 — 3 Bắt buộc mới (áp dụng từ v2.0)
+
+```
+1. SCHEMA-DRIVEN OUTPUT
+   → OKR (company + department) + Quality Standards (SLI/SLO/SLA)
+     phải emit JSON artifact song song với markdown, validate qua JSON Schema.
+   → Schemas: schema/company-okr.schema.json, schema/quality-standards.schema.json
+   → Artifact path: output/company-okr.json, output/[dept]-okr.json, output/quality-[dept].json
+
+2. EVIDENCE + CONFIDENCE_SCORE + NEED_REVIEW (chống hallucination target)
+   → Mọi SLO target / OKR target phải có evidence (verbatim quote từ brief/interview/benchmark).
+   → confidence_score < 0.7 → need_review = true → vào output/review-queue.md.
+   → KHÔNG được commit target mà không có evidence (xem Anti-patterns).
+
+3. EXECUTION LOG (audit trail)
+   → Mỗi phase/action ghi 1 dòng vào output/execution_log.jsonl
+   → Format: {"phase", "step", "target", "status", "confidence", "ts"}
+   → Cho phép trace lại: target nào sinh ra ở phase nào, evidence gì.
+```
+
+### 8.2 — Evidence Schema (áp dụng cho OKR + Quality Standards)
+
+```json
+{
+  "evidence": [
+    {
+      "claim": "SLO accuracy ≥ 98% cho content publishing",
+      "verbatim_quote": "Bài sai chính tả/thông tin làm mất uy tín — cần < 2 lỗi/100 bài",
+      "source": "input/brief.md",
+      "location": "line 47"
+    }
+  ],
+  "confidence_score": 0.85,
+  "need_review": false
+}
+```
+
+**Rules (giống vibe-aiworkforce):**
+- `confidence_score < 0.7` → auto `need_review = true`
+- `evidence` phải verbatim (không paraphrase) — validator verify
+- Evidence missing → confidence -0.2 per missing item
+- **SLO là external promise (SLA)** → confidence thấp = risk cao → BẮT BUỘC need_review
+
+### 8.3 — Validator Invocation Pattern
+
+```bash
+# Validate OKR artifact
+python3 script/validator.py --run-all \
+  --artifact output/company-okr.json \
+  --schema schema/company-okr.schema.json \
+  --source input/brief.md
+
+# Validate Quality Standards
+python3 script/validator.py --run-all \
+  --artifact output/quality-mkt.json \
+  --schema schema/quality-standards.schema.json \
+  --source input/brief.md
+
+# Validate handoff brief trước khi gọi aiworkforce (Phase 6)
+python3 script/validator.py --run-all \
+  --artifact output/aiworkforce-handoff-brief.json \
+  --schema schema/aiworkforce-handoff-brief.schema.json
+
+# Preflight (hook mode — chặn edit template/, archive/)
+python3 script/validator.py --preflight-target /path/to/template/SOP.md
+
+# Log entry sau mỗi phase
+python3 script/log_helper.py PHASE STEP TARGET STATUS
+```
+
+> **Note:** Skill này **self-exemplify** chuẩn 8-component — có `script/` riêng (`validator.py`, `log_helper.py`, `review_queue.py`, `anonymizer.py`, `install_hooks.sh`). Khi generate company, copy các script này vào `[COMPANY_ROOT]/_shared/script/` để company workspace có guardrail tự chứa. Xem `Self-Exemplification Reference` bên dưới.
+
+### 8.4 — Schema-Aware Handoff cho vibe-aiworkforce (Phase 6)
+
+**Trước khi invoke `vibe-aiworkforce` ở Phase 6, parent BẮT BUỘC emit `output/aiworkforce-handoff-brief.json` thỏa `schema/aiworkforce-handoff-brief.schema.json`:**
+
+```json
+{
+  "company_root": "/abs/path/to/company",
+  "department": "02-marketing",
+  "sop_inputs": [
+    {"sop_code": "SOP-MKT-001", "path": "template/sop_mkt-001.md", "type": "operational"}
+  ],
+  "quality_contract": {
+    "quality_standards_ref": "02-marketing/quality_mkt-001.md",
+    "okr_ref": "02-marketing/okr_mkt-001.md",
+    "kri_ref": "02-marketing/kri_mkt-001.md"
+  },
+  "schema_requirements": {
+    "require_8_components": true,
+    "require_evidence_confidence": true,
+    "require_hooks": true,
+    "require_skill_json": true
+  },
+  "evidence": [...],
+  "confidence_score": 0.9,
+  "need_review": false
+}
+```
+
+**Ý nghĩa:** Brief truyền xuống không chỉ là list SOP — nó là **contract** ép aiworkforce build skills có đủ 8 components, embed đúng SLI/SLO (quality_contract), và dùng schema_requirements để verify sau build.
+
+### 8.5 — Guardrail (Hooks) áp dụng cho SOP folders
+
+SOP folder state machine (template/input/processing/output/archive) sinh ra ở Step 3.4a cần bảo vệ:
+
+```
+Protected paths (KHÔNG edit trực tiếp):
+  template/     ← chỉ edit qua SOP review cycle, không edit ad-hoc
+  archive/      ← read-only (immutable audit trail)
+
+Hooks config (hooks.json style — reference vibe-aiworkforce/hooks.json):
+  PreToolUse Edit/Write trên path chứa /template/  → BLOCK (trừ phase generate)
+  PreToolUse Edit/Write trên path chứa /archive/   → BLOCK luôn
+```
+
+→ Khi generate company, copy `hooks.json` pattern vào `[COMPANY_ROOT]/.claude/hooks.json` để guardrail áp dụng cho toàn bộ company workspace.
+
+### 8.6 — Schema Bundle (Deliverable mới)
+
+```markdown
+## 📐 Schema Bundle: [Company Name]
+
+| # | Schema | Artifact | Khi nào validate |
+|---|--------|----------|------------------|
+| 1 | company-okr.schema.json | Company + Dept OKR JSON | Sau Step 2.5a (OKR definition) |
+| 2 | quality-standards.schema.json | Quality Standards JSON | Sau Step 2.5 (SLI/SLO/SLA) |
+| 3 | aiworkforce-handoff-brief.schema.json | Phase 6 handoff brief | TRƯỚC khi invoke aiworkforce |
+```
+
+→ Schema = contract giữa các phases. Validator = automated QA. Evidence = chống hallucination target. Execution log = audit trail.
+
+### 8.7 — Self-Exemplification: skill này tuân thủ 8 components
+
+> "Trần sao âm vậy" — skill yêu cầu vibe-aiworkforce tuân thủ 8 components thì chính nó cũng phải tuân thủ. Đây là reference implementation:
+
+```
+vibe-company-orchestrator/
+├── SKILL.md                          ← Component 0: Human-readable entry
+├── skill.json                        ← Component 7: Machine-readable metadata
+├── hooks.json                        ← Component 5: Guard template/, archive/
+├── kb/                               ← Component 8: Knowledge base
+│   ├── skill-conventions.md            (8-component checklist + validator usage)
+│   ├── quality-standards.md            (SLI/SLO/SLA reference)
+│   └── okr-evidence-rubric.md          (confidence scoring cho OKR/SLA)
+├── script/                           ← Components 1,3,4,6: Validators + queue + log + anonymizer
+│   ├── validator.py                    (schema + evidence + confidence + log pipeline)
+│   ├── log_helper.py                   (shell wrapper cho execution_log)
+│   ├── review_queue.py                 (collect need_review → review-queue.md)
+│   ├── anonymizer.py                   (PII/injection scrub cho intake brief)
+│   └── install_hooks.sh                (install guardrail: skill / global / workspace)
+├── prompt/                           ← Component 8: Reusable prompts
+│   ├── company-build-prompt.md         (template generate company)
+│   └── okr-evidence-check-prompt.md    (audit evidence cho OKR/SLA)
+├── schema/                           ← Component 1: JSON Schemas
+│   ├── company-okr.schema.json
+│   ├── quality-standards.schema.json
+│   ├── aiworkforce-handoff-brief.schema.json
+│   ├── skill-meta.schema.json
+│   └── execution-log-entry.schema.json
+├── test/                             ← Component 8: Test cases
+│   ├── smoke-test.md                   (8-component + script smoke)
+│   ├── trigger-validation.md           (description trigger cases)
+│   └── schema-validation.test.py       (schema + pipeline automated test)
+└── synthetic-data/                   ← Component 8: Sample inputs
+    ├── sample-company-inputs.md        (intake brief mẫu)
+    ├── sample-company-okr.json         (happy-path OKR artifact)
+    ├── sample-quality-standards.json   (happy-path SLI/SLO artifact)
+    └── sample-handoff-brief.json       (happy-path Phase 6 brief)
+```
+
+**Verify self-exemplification:**
+```bash
+cd ~/.claude/skills/vibe-company-orchestrator
+python3 test/schema-validation.test.py    # Expected: 16 passed, 0 failed
+bash test/smoke-test.md commands          # Hoặc theo smoke-test.md
 ```
 
 ---
@@ -1541,6 +1765,10 @@ STEP 2.5: QUALITY STANDARDS DEFINITION (SLI/SLO/SLA)
 → Output: quality_[dept]-001_quality-standards_v1.0_[date].md per department
 → Lưu ý: KHÔNG target 100% cho operational SLI — cần error budget
 → Lưu ý: SLI phải quantifiable — không dùng "tốt", "đẹp", "chất lượng"
+→ **v2.0 EVIDENCE-BOUND:** Mỗi SLO target phải có verbatim evidence (benchmark/historical/brief).
+  Emit song song output/quality-[dept].json, validate schema/quality-standards.schema.json.
+  confidence_score < 0.7 (đặc biệt SLA) → need_review=true → output/review-queue.md.
+  → **LOG:** python3 script/log_helper.py PHASE-2 STEP-2.5 quality-[dept] DONE
 
 STEP 2.5a: OKR / KRI / KPI DEFINITION (per department)
 → Sau khi Company OKR đã set (ở 01-strategy/okr_company-001):
@@ -1694,9 +1922,14 @@ PHASE 4: LINK — Cross-link tất cả files
 PHASE 5: REVIEW — Quality gate
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 → Self-check theo Quality Checklist (xem bên dưới)
+→ **v2.0 SCHEMA VALIDATION GATE:** Validate mọi OKR + Quality Standards artifact
+  → python3 script/validator.py --run-all cho mỗi output/*.json
+  → Evidence missing → confidence -0.2 → re-source hoặc flag need_review
+  → Tất cả need_review=true → tổng hợp vào output/review-queue.md cho user duyệt
 → Flag: departments cần user verify
 → Flag: SOP cần deep analysis (invoke vibe-sop-orchestrator)
 → Optional: Invoke vibe-review trên sample SOP
+→ **v2.0 EXECUTION LOG CHECK:** output/execution_log.jsonl có đủ entry cho mỗi phase không?
 → Delivery: summary của toàn bộ company structure
     ↓
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -1710,7 +1943,16 @@ PHASE 6.1: ACTIVATE SINGLE DEPARTMENT
 → Đọc tất cả SOP trong department:
   - OPERATIONAL SOPs → đọc SOP .md từ template/ folder
   - DOCUMENTATION-ONLY SOPs → đọc flat file trực tiếp
-→ Invoke vibe-aiworkforce với SOP inputs VÀ COMPANY_ROOT:
+→ **v2.0 SCHEMA-AWARE HANDOFF (BẮT BUỘC trước khi invoke):**
+  → Emit output/aiworkforce-handoff-brief.json thỏa
+    schema/aiworkforce-handoff-brief.schema.json
+  → Validate: python3 script/validator.py --run-all
+      --artifact output/aiworkforce-handoff-brief.json
+      --schema schema/aiworkforce-handoff-brief.schema.json
+  → Brief phải chứa: company_root, department, sop_inputs, quality_contract
+    (ref tới quality_[dept]-001 + okr_[dept]-001), schema_requirements (8 components ON)
+  → FAIL → KHÔNG invoke aiworkforce → fix brief trước
+→ Invoke vibe-aiworkforce với handoff brief VÀ COMPANY_ROOT:
   COMPANY_ROOT = [company-slug] folder path (BẮT BUỘC)
   → vibe-aiworkforce sẽ lưu skills trong [COMPANY_ROOT]/[department]/ai_workforce/
 → vibe-aiworkforce tự detect SOP folders đã có sẵn (input/processing/output/archive)
@@ -1722,10 +1964,16 @@ PHASE 6.1: ACTIVATE SINGLE DEPARTMENT
 → Verify: Mỗi skill được lưu tại:
   PRIMARY: [COMPANY_ROOT]/[department]/ai_workforce/[skill-name]/SKILL.md
   SYMLINK: ~/.claude/skills/[skill-name] → PRIMARY
+→ **v2.0 VERIFY 8-COMPONENTS (sau build — BẮT BUỘC):**
+  → Mỗi skill built phải có: skill.json + schema/ + script/validator.py + hooks.json
+    + kb/ + prompt/ + test/ + synthetic-data/
+  → Mỗi artifact output mang evidence + confidence_score + need_review
+  → Thiếu → yêu cầu aiworkforce build bổ sung → re-verify
 → Update [department]/ai_workforce/README.md với skill status
 → Update _ai-workforce/ workforce map
 → **KWSR UPDATE: Refresh _skills-agents/README.md với skill coverage matrix**
 → **KWSR UPDATE: Refresh _rules/README.md với decision authority từ worker profiles**
+→ **v2.0 LOG:** python3 script/log_helper.py PHASE-6 STEP-6.1 [dept] DONE
 
 PHASE 6.2: CREATE COMPANY GPS
 → User: "Tạo company GPS" hoặc "Tạo AI Chief of Staff"
@@ -2817,6 +3065,20 @@ vibe-prd-creator
   - Quarterly: OKR full scoring + KRI + strategy review
 □ KWSR _knowledge/README.md có OKR Alignment Map + KRI Dashboard + KPI Reference?
 □ KRI decision rules defined (on-track / at-risk / off-track)?
+
+── Schema & Guardrail Layer v2.0 (MỚI — đồng bộ vibe-aiworkforce) ──
+□ Mỗi OKR artifact (company + dept) có JSON song song validate schema/company-okr.schema.json?
+□ Mỗi Quality Standards artifact có JSON song song validate schema/quality-standards.schema.json?
+□ Mỗi SLO target có verbatim evidence (benchmark/historical/brief) — không cảm tính?
+□ Mỗi OKR target (Committed + Stretch) có evidence?
+□ Stretch OKR (x10) không có benchmark → need_review=true đã được flag?
+□ confidence_score tính cho mỗi OKR + Quality artifact?
+□ Mọi confidence_score < 0.7 → need_review=true → vào output/review-queue.md?
+□ output/execution_log.jsonl có entry cho mỗi phase (0→6)?
+□ Phase 6: aiworkforce-handoff-brief.json emit + validate TRƯỚC khi invoke aiworkforce?
+□ Phase 6: mỗi skill built có đủ 8 components (skill.json + schema/ + script/validator.py + hooks.json + kb/ + prompt/ + test/ + synthetic-data/)?
+□ hooks.json pattern được copy vào [COMPANY_ROOT]/.claude/ (guard template/, archive/)?
+□ KHÔNG có SLO/OKR target commit mà thiếu evidence (chống hallucination target)?
 ```
 
 ---
@@ -2897,6 +3159,18 @@ vibe-prd-creator
 ❌ Report quarterly không có OKR scoring → quarterly review MÀU OKR scoring = lãng phí
 ❌ KRI và KPI bị nhầm lẫn → KRI = outcome (lagging), KPI = performance (leading)
 ❌ File naming không phân biệt okr_ / kri_ / kpi_ → 3 loại chỉ số khác nhau, 3 files khác nhau
+
+── Schema & Guardrail Anti-patterns (v2.0) ────────────────────────────
+❌ Commit SLO target / OKR target mà KHÔNG có evidence → hallucination target, không có cơ sở (chống: confidence < 0.7 → need_review)
+❌ Set SLO = "best practice ngành" mà không có verbatim source → phải cite benchmark/historical/brief
+❌ Stretch OKR (x10) commit luôn mà KHÔNG flag need_review → moonshot không verify = rủi ro ẩn
+❌ Emit chỉ markdown, không emit JSON artifact → mất schema contract, không validate được
+❌ Invoke vibe-aiworkforce mà KHÔNG emit handoff brief JSON trước → contract đứt, aiworkforce không biết quality_contract
+❌ Skill built bởi aiworkforce thiếu 8 components mà vẫn accept → parent phải verify sau build
+❌ Edit file trong template/ hoặc archive/ trực tiếp (bypass SOP review cycle / immutable audit) → dùng hooks guardrail
+❌ Skip execution_log → mất audit trail, không trace được target sinh ở phase nào
+❌ Tách confidence khỏi evidence (confidence cao nhưng evidence thiếu) → confidence phải derive từ evidence
+❌ SLA (external promise) có confidence thấp mà KHÔNG escalate → risk cao phải BẮT BUỘC review
 ```
 
 ---

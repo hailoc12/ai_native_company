@@ -7,6 +7,33 @@ và [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [1.1.0] — 2026-06-22
+
+Bản nâng cấp **skills lên cấu trúc v2.0.0** — từ SKILL.md đơn lẻ sang package đầy đủ: schema contract, validator, hooks giảm hallucination, synthetic data và test suite.
+
+### Thêm mới
+- **Cấu trúc hỗ trợ đầy đủ** cho cả 2 skill — mỗi skill giờ gồm:
+  - `skill.json` — metadata machine-readable (phases, dependencies, quality gates)
+  - `hooks.json` + `script/install_hooks.sh` — PreToolUse/PostToolUse bảo vệ `template/` và `archive/`
+  - `schema/` — JSON Schema cho mọi artifact (workforce-analysis, workflow-design, skill-spec, company-okr, quality-standards, handoff-brief, execution-log)
+  - `script/validator.py` — validate artifact chống schema drift
+  - `script/anonymizer.py` — strip thông tin cá nhân / API keys khỏi output
+  - `script/log_helper.py` + `script/review_queue.py` — execution log + review queue
+  - `test/` — smoke test, trigger validation, schema-validation test suite
+  - `synthetic-data/` — sample inputs/outputs để chạy thử
+  - `kb/`, `prompt/`, `resources/` — knowledge base + reusable prompts
+- **vibe-aiworkforce** bổ sung `05-templates/` (4 template) và `06-examples/`
+
+### Cải thiện
+- **vibe-company-orchestrator v2.0** — đồng bộ **Schema & Guardrail contract** với vibe-aiworkforce: emit `evidence/confidence/need_review` cho OKR + Quality Standards, handoff-brief schema khi giao việc cho AI Workforce
+- **vibe-aiworkforce v2.0** — 7 substep build pipeline (schema → validator → skill.json → anonymizer preflight → hooks → execution log → evidence validation), quality gates với `min_confidence: 0.7`
+- Cả hai skill dùng chung `execution-log-entry.schema.json` → log format thống nhất
+
+### Loại bỏ
+- Các file `SKILL.md.backup-*` (snapshot trung gian) — không đưa vào repo
+
+---
+
 ## [1.0.3] — 2026-05-17
 
 ### Thêm mới

@@ -1,0 +1,108 @@
+{
+  "name": "vibe-aiworkforce",
+  "version": "2.0.0",
+  "description": "Chuyển hóa task/workflow doanh nghiệp thành nhân sự số: folder structure, workflow có conditional branching, Claude Skills chuyên biệt (vibe-[nhiem-vu]-[sub-skill]), Rules & Tests, kèm schemas + validator + hooks giảm hallucination. Use when business wants AI digital workforce.",
+  "phases": {
+    "analyze": {
+      "inputs": ["task description", "company_root path"],
+      "outputs": ["workforce-analysis.json"],
+      "schema": "schema/workforce-analysis.schema.json",
+      "min_confidence": 0.7,
+      "evidence_required": true
+    },
+    "decompose": {
+      "inputs": ["workforce-analysis.json"],
+      "outputs": ["role-map.json", "workflow-nodes.json"]
+    },
+    "architect": {
+      "inputs": ["workforce-analysis.json", "role-map.json"],
+      "outputs": ["folder-structure.json", "workflow-design.json", "skill-specs.json", "rules-tests.json"],
+      "schema": "schema/workflow-design.schema.json",
+      "min_confidence": 0.7,
+      "evidence_required": true
+    },
+    "output": {
+      "inputs": ["architect artifacts"],
+      "outputs": ["5-deliverables-bundle.md"]
+    },
+    "mkdir": {
+      "inputs": ["folder-structure.json"],
+      "outputs": ["sop-folders (filesystem)"],
+      "scripts_required": ["create_sop_folder"]
+    },
+    "build": {
+      "inputs": ["skill-specs.json"],
+      "outputs": ["SKILL.md files", "skill.json files", "schema/ folders", "script/ folders"],
+      "substeps": [
+        "E.0 BUILD CORE SKILL.md",
+        "E.1 SCHEMA LAYER (sinh schema/)",
+        "E.2 VALIDATOR LAYER (sinh script/validator.py)",
+        "E.3 SKILL.JSON (sinh machine-readable metadata)",
+        "E.4 ANONYMIZER PREFLIGHT (sinh script/anonymizer.py)",
+        "E.5 HOOKS (install PreToolUse/PostToolUse)",
+        "E.6 EXECUTION LOG (convention log mọi action)",
+        "E.7 EVIDENCE VALIDATION (verify evidence tồn tại)"
+      ],
+      "min_confidence": 0.7,
+      "evidence_required": true
+    }
+  },
+  "dependencies": {
+    "upstream": [
+      "vibe-company-orchestrator",
+      "vibe-opc-orchestrator",
+      "vibe-automation-orchestrator",
+      "vibe-coding-orchestrator",
+      "vibe-packaging-orchestrator",
+      "vibe-sop-orchestrator",
+      "vibe-xmoney-orchestrator",
+      "vibe-xglobal-orchestrator",
+      "vibe-error-orchestrator",
+      "vibe-simplify-orchestrator",
+      "vibe-build-template-orchestrator",
+      "vibe-build-slide-skill",
+      "vibe-aiworkforce-gps",
+      "vibe-ppm-gps",
+      "vibe-review",
+      "vibe-xthinking-orchestrator"
+    ],
+    "downstream": [
+      "vibe-review",
+      "vibe-gps",
+      "clone-skill-to-vibe-work",
+      "deep-research",
+      "vibe-overview",
+      "vibe-humanizer",
+      "vibe-user-review",
+      "vibe-omnifocus"
+    ]
+  },
+  "quality_gates": [
+    {"step": "analyze", "min_confidence": 0.7, "schema_required": true, "evidence_required": true},
+    {"step": "architect", "min_confidence": 0.7, "schema_required": true, "evidence_required": true},
+    {"step": "build", "min_confidence": 0.7, "evidence_required": true, "validator_required": true}
+  ],
+  "scripts": {
+    "validator": "script/validator.py",
+    "anonymizer": "script/anonymizer.py",
+    "log_helper": "script/log_helper.py",
+    "review_queue": "script/review_queue.py",
+    "install_hooks": "script/install_hooks.sh"
+  },
+  "folders": {
+    "kb": true,
+    "script": true,
+    "prompt": true,
+    "schema": true,
+    "test": true,
+    "synthetic_data": true
+  },
+  "conventions": [
+    "Skill storage in company folder (COMPANY_ROOT)",
+    "KWSR folder structure for departments (_knowledge, _workflow, _skills-agents, _rules)",
+    "SOP state machine (template/input/processing/output/archive)",
+    "Skill naming: vibe-[domain]-[role]",
+    "Description formula: WHAT.TRIGGER.EXCLUSION.PUSH (80-250 words)",
+    "8 mandatory components per skill (Tip 1-8)"
+  ]
+}

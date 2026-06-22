@@ -1,0 +1,65 @@
+{
+  "scope": "department",
+  "scope_ref": "02-marketing",
+  "period": "Q3-2026",
+  "objectives": [
+    {
+      "objective_id": "OBJ-MKT-1",
+      "objective": "Grow organic presence và content output consistency",
+      "type": "committed",
+      "aligned_to_company_okr": "OBJ-CO-2",
+      "key_results": [
+        {
+          "kr_id": "KR-MKT-1",
+          "result": "Organic traffic +40%",
+          "metric": "monthly sessions",
+          "target": "84000",
+          "baseline": "60000",
+          "kr_type": "kri",
+          "kri_id": "KRI-MKT-1"
+        },
+        {
+          "kr_id": "KR-MKT-2",
+          "result": "Content output duy trì 5 bài/tuần với consistency",
+          "metric": "articles/week passing quality gate",
+          "target": "5",
+          "baseline": "5 (inconsistent)",
+          "kr_type": "kpi"
+        }
+      ]
+    },
+    {
+      "objective_id": "OBJ-MKT-2",
+      "objective": "10x content engine — từ 5 bài/tuần sang systems-driven",
+      "type": "stretch",
+      "aligned_to_company_okr": "OBJ-CO-2",
+      "key_results": [
+        {
+          "kr_id": "KR-MKT-3",
+          "result": "Content engine tự vận hành, founder không còn bottleneck",
+          "metric": "founder hours/week on content",
+          "target": "<2",
+          "baseline": "20",
+          "kr_type": "kri",
+          "kri_id": "KRI-MKT-2"
+        }
+      ]
+    }
+  ],
+  "evidence": [
+    {
+      "claim": "Baseline traffic 60k sessions/tháng",
+      "verbatim_quote": "Traffic organic khoảng 60k sessions/tháng",
+      "source": "synthetic-data/sample-company-inputs.md",
+      "location": "Sample 2"
+    },
+    {
+      "claim": "Content output hiện tại 5 bài/tuần",
+      "verbatim_quote": "Hiện tại team tôi xuất 5 bài LinkedIn/tuần",
+      "source": "synthetic-data/sample-company-inputs.md",
+      "location": "Sample 2"
+    }
+  ],
+  "confidence_score": 0.85,
+  "need_review": false
+}

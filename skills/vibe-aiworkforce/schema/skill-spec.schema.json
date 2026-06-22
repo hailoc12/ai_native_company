@@ -1,0 +1,81 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://vibe-aiworkforce/schema/skill-spec.schema.json",
+  "title": "Skill Specification (Phase C Output)",
+  "type": "object",
+  "required": ["skill_name", "purpose", "persona", "inputs", "outputs", "tools", "quality_tier", "build_method", "evidence", "confidence_score", "need_review"],
+  "properties": {
+    "skill_name": {
+      "type": "string",
+      "pattern": "^vibe-[a-z-]+$",
+      "description": "Skill name, format: vibe-[domain]-[role]"
+    },
+    "priority": {
+      "type": "string",
+      "enum": ["P0", "P1", "P2", "P3"]
+    },
+    "purpose": {
+      "type": "string",
+      "minLength": 10,
+      "maxLength": 200,
+      "description": "Single clear responsibility"
+    },
+    "persona": {
+      "type": "string",
+      "description": "Expert title + key trait"
+    },
+    "inputs": {
+      "type": "object",
+      "required": ["format", "source"],
+      "properties": {
+        "format": {"type": "string"},
+        "source": {"type": "string"},
+        "example": {"type": "string"}
+      }
+    },
+    "outputs": {
+      "type": "object",
+      "required": ["format", "destination"],
+      "properties": {
+        "format": {"type": "string"},
+        "destination": {"type": "string"},
+        "example": {"type": "string"}
+      }
+    },
+    "tools": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string",
+        "enum": ["Read", "Write", "Edit", "Bash", "WebSearch", "Agent", "MCP", "Browser", "API"]
+      }
+    },
+    "quality_tier": {
+      "type": "string",
+      "enum": ["TEMPLATED", "EXPERT-CLONE", "GPS-ENHANCED", "DUAL"]
+    },
+    "build_method": {
+      "type": "string",
+      "enum": ["direct", "clone-skill-to-vibe-work", "gps-integrated", "dual"]
+    },
+    "escalation_triggers": {
+      "type": "array",
+      "items": {"type": "string"}
+    },
+    "evidence": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["claim", "verbatim_quote", "source"],
+        "properties": {
+          "claim": {"type": "string"},
+          "verbatim_quote": {"type": "string"},
+          "source": {"type": "string"}
+        }
+      }
+    },
+    "confidence_score": {"type": "number", "minimum": 0, "maximum": 1},
+    "need_review": {"type": "boolean"},
+    "review_reason": {"type": "string"}
+  }
+}

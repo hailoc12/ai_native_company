@@ -1,0 +1,32 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "skill-meta.schema.json",
+  "title": "Skill Metadata (skill.json)",
+  "description": "Machine-readable metadata cho skill. Validate skill.json của chính vibe-company-orchestrator và các skill con do nó/aiworkforce build ra.",
+  "type": "object",
+  "required": ["name", "version", "type", "description"],
+  "properties": {
+    "name": {"type": "string", "pattern": "^vibe-[a-z0-9-]+$"},
+    "version": {"type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+$"},
+    "type": {"type": "string", "enum": ["skill"]},
+    "description": {"type": "string", "minLength": 10},
+    "integrations": {
+      "type": "object",
+      "properties": {
+        "downstream": {"type": "array", "items": {"type": "string"}},
+        "upstream": {"type": "array", "items": {"type": "string"}},
+        "schema_contract": {"type": "object"}
+      }
+    },
+    "schemas": {"type": "array", "items": {"type": "string"}},
+    "guardrails": {
+      "type": "object",
+      "properties": {
+        "evidence_required": {"type": "boolean"},
+        "confidence_threshold": {"type": "number", "minimum": 0, "maximum": 1},
+        "hooks_protected_paths": {"type": "array", "items": {"type": "string"}},
+        "execution_log": {"type": "string"}
+      }
+    }
+  }
+}

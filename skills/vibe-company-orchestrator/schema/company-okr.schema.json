@@ -1,0 +1,85 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "company-okr.schema.json",
+  "title": "Company / Department OKR (evidence-bound)",
+  "description": "OKR deliverable của vibe-company-orchestrator. Ép mọi target/key-result phải có evidence (verbatim quote từ brief/interview) + confidence_score. confidence < 0.7 → need_review = true → vào review queue. Đồng bộ contract với vibe-aiworkforce.",
+  "type": "object",
+  "required": ["scope", "period", "objectives", "evidence", "confidence_score", "need_review"],
+  "properties": {
+    "scope": {
+      "type": "string",
+      "enum": ["company", "department"],
+      "description": "company = 00-company/okr_company-001; department = okr_[dept]-001"
+    },
+    "scope_ref": {
+      "type": "string",
+      "description": "Department slug nếu scope=department (vd: 02-marketing)"
+    },
+    "period": {
+      "type": "string",
+      "description": "Quý/năm (vd: Q3-2026)"
+    },
+    "objectives": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["objective_id", "objective", "type", "key_results"],
+        "properties": {
+          "objective_id": {"type": "string"},
+          "objective": {"type": "string", "minLength": 1},
+          "type": {"type": "string", "enum": ["committed", "stretch"]},
+          "aligned_to_company_okr": {
+            "type": "string",
+            "description": "OKR ID mà dept OKR contribute vào (BẮT BUỘC nếu scope=department)"
+          },
+          "key_results": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "object",
+              "required": ["kr_id", "result", "metric", "target", "kr_type"],
+              "properties": {
+                "kr_id": {"type": "string"},
+                "result": {"type": "string", "minLength": 1},
+                "metric": {"type": "string", "description": "Phải quantifiable — không 'tốt/đẹp'"},
+                "target": {"type": "string"},
+                "baseline": {"type": "string"},
+                "kr_type": {"type": "string", "enum": ["kpi", "kri"]},
+                "kri_id": {"type": "string", "description": "Link sang kri file nếu kr_type=kri"}
+              }
+            }
+          }
+        }
+      }
+    },
+    "evidence": {
+      "type": "array",
+      "description": "Verbatim quote từ brief/interview cho các target. KHÔNG paraphrase.",
+      "items": {
+        "type": "object",
+        "required": ["claim", "verbatim_quote", "source"],
+        "properties": {
+          "claim": {"type": "string", "description": "Statement được claim (vd: 'Target 100 bài/tháng')"},
+          "verbatim_quote": {"type": "string", "minLength": 1, "description": "Nguyên văn trích từ source"},
+          "source": {"type": "string", "description": "input/brief.md, interview, benchmark..."},
+          "location": {"type": "string"}
+        }
+      }
+    },
+    "confidence_score": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1,
+      "description": "0.7 = threshold. < 0.7 → need_review auto true."
+    },
+    "need_review": {
+      "type": "boolean",
+      "description": "true → target chưa có đủ evidence, cần human verify trước khi commit"
+    },
+    "review_reason": {
+      "type": "string",
+      "description": "Lý do need_review=true (vd: 'Stretch OKR x10 không có benchmark')"
+    }
+  }
+}

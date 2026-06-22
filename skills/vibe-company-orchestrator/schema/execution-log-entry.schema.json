@@ -1,0 +1,19 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "execution-log-entry.schema.json",
+  "title": "Execution Log Entry",
+  "description": "Mỗi dòng trong output/execution_log.jsonl phải thỏa schema này — audit trail cho mọi phase/action khi generate company.",
+  "type": "object",
+  "required": ["timestamp", "step", "action", "target", "actor", "status"],
+  "properties": {
+    "timestamp": {"type": "string", "description": "ISO-8601 UTC, vd: 2026-06-22T08:04:41Z"},
+    "step": {"type": "string", "description": "phase-0, phase-2, validate, ..."},
+    "action": {"type": "string", "description": "intake, step-2.5a, run_all, write, ..."},
+    "target": {"type": "string", "description": "file path hoặc artifact name"},
+    "actor": {"type": "string", "description": "vibe-company-orchestrator | vibe-aiworkforce | human"},
+    "status": {"type": "string", "enum": ["success", "SUCCESS", "DONE", "fail", "skip", "error"]},
+    "duration_ms": {"type": "integer", "minimum": 0},
+    "schema_validated": {"type": "boolean"},
+    "evidence_verified": {"type": "boolean"}
+  }
+}

@@ -1,0 +1,75 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://vibe-aiworkforce/schema/workflow-design.schema.json",
+  "title": "Workflow Design (Phase B/C Output)",
+  "type": "object",
+  "required": ["workflow_name", "owner", "nodes", "evidence", "confidence_score", "need_review"],
+  "properties": {
+    "workflow_name": {"type": "string", "minLength": 3},
+    "owner": {
+      "type": "string",
+      "pattern": "^vibe-[a-z-]+-orchestrator$"
+    },
+    "trigger": {"type": "string"},
+    "frequency": {
+      "type": "string",
+      "enum": ["once", "daily", "weekly", "triggered", "real-time"]
+    },
+    "estimated_duration_minutes": {"type": "integer", "minimum": 1},
+    "nodes": {
+      "type": "array",
+      "minItems": 2,
+      "description": "Must include START and END nodes",
+      "items": {
+        "type": "object",
+        "required": ["id", "type"],
+        "properties": {
+          "id": {"type": "string", "pattern": "^[A-Z_][A-Z0-9_]*$"},
+          "type": {
+            "type": "string",
+            "enum": ["START", "STEP", "DECISION", "PARALLEL", "MERGE", "REVIEW", "LOOP", "INCIDENT", "ESCALATE", "MKDIR", "AUTO-ARCHIVE", "END"]
+          },
+          "actor": {"type": "string"},
+          "inputs": {"type": "array", "items": {"type": "string"}},
+          "outputs": {"type": "array", "items": {"type": "string"}},
+          "next": {
+            "description": "Next node id(s)",
+            "oneOf": [
+              {"type": "string"},
+              {"type": "array", "items": {"type": "string"}}
+            ]
+          },
+          "confidence_score": {"type": "number", "minimum": 0, "maximum": 1},
+          "evidence": {"type": "array", "items": {"type": "string"}}
+        }
+      }
+    },
+    "quality_gates": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "node_id": {"type": "string"},
+          "threshold": {"type": "number"},
+          "sli": {"type": "string"},
+          "slo": {"type": "string"}
+        }
+      }
+    },
+    "evidence": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["claim", "verbatim_quote", "source"],
+        "properties": {
+          "claim": {"type": "string"},
+          "verbatim_quote": {"type": "string"},
+          "source": {"type": "string"}
+        }
+      }
+    },
+    "confidence_score": {"type": "number", "minimum": 0, "maximum": 1},
+    "need_review": {"type": "boolean"},
+    "review_reason": {"type": "string"}
+  }
+}

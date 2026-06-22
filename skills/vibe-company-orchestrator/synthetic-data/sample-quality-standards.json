@@ -1,0 +1,53 @@
+{
+  "department": "02-marketing",
+  "standards": [
+    {
+      "sop_code": "SOP-MKT-001",
+      "sli": {
+        "name": "Content factual accuracy",
+        "definition": "% claims trong bài có source verify được"
+      },
+      "slo": {
+        "target": "≥ 98%",
+        "is_external_promise": false
+      },
+      "error_budget": "2%",
+      "measurement_method": {
+        "how": "Editor review + auto-check unverified claims",
+        "who": "Content reviewer",
+        "frequency": "per article"
+      },
+      "quality_gate": "All claims có source + readability ≥ 65",
+      "prevention": "Checklist '5 claims phải có source' trước khi draft (Eliminate)"
+    },
+    {
+      "sop_code": "SOP-MKT-001",
+      "sli": {
+        "name": "On-time publishing",
+        "definition": "% bài publish đúng lịch đã plan"
+      },
+      "slo": {
+        "target": "≥ 95%",
+        "is_external_promise": false
+      },
+      "error_budget": "5%",
+      "measurement_method": {
+        "how": "Compare publish timestamp vs planned slot",
+        "who": "Content manager",
+        "frequency": "weekly"
+      },
+      "quality_gate": "Publish trong ±2h của planned slot",
+      "prevention": "Editorial calendar auto-reminder T-1 day (Detect Early)"
+    }
+  ],
+  "evidence": [
+    {
+      "claim": "SLO accuracy ≥ 98% based on industry benchmark",
+      "verbatim_quote": "Bài sai thông tin làm mất uy tín — cần < 2 lỗi/100 bài",
+      "source": "synthetic-data/sample-company-inputs.md",
+      "location": "Sample 1 pain points (paraphrase boundary)"
+    }
+  ],
+  "confidence_score": 0.8,
+  "need_review": false
+}

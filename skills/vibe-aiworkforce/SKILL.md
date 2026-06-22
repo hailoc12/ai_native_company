@@ -136,6 +136,100 @@ create_skill_symlink() {
 
 ---
 
+## Skill Skeleton — 8 Mandatory Components (NEW)
+
+> MỌI skill build bởi vibe-aiworkforce phải tuân thủ 8 components dưới đây.
+> Self-exemplified: chính vibe-aiworkforce đã có đủ 8 components (xem `kb/skill-conventions.md`).
+
+```
+[skill-name]/
+├── SKILL.md              ← Human-readable entry point (existing)
+├── skill.json            ← Machine-readable metadata (NEW — Tip 7)
+├── kb/                   ← Knowledge base, rubrics (NEW — Tip 8)
+│   └── *.md
+├── script/               ← Validators, anonymizer, hooks (NEW — Tip 1, 4, 5, 6)
+│   ├── validator.py
+│   ├── anonymizer.py
+│   ├── log_helper.py
+│   └── install_hooks.sh
+├── prompt/               ← Reusable prompts (NEW — Tip 8)
+│   └── *.md
+├── schema/               ← JSON Schemas for outputs (NEW — Tip 1)
+│   └── *.schema.json
+├── test/                 ← Test cases (NEW — Tip 8)
+│   ├── smoke-test.md
+│   └── trigger-validation.md
+├── synthetic-data/       ← Sample inputs for testing (NEW — Tip 8)
+│   └── *.md
+└── hooks.json            ← PreToolUse/PostToolUse config (NEW — Tip 5)
+```
+
+### 8 Components — Tóm tắt
+
+| # | Component | Mục đích | Where |
+|---|-----------|---------|-------|
+| 1 | **Schemas + Validator** | Ép output cấu trúc → giảm hallucination | `schema/`, `script/validator.py` |
+| 2 | **evidence + confidence_score + need_review** | Buộc AI trích dẫn, không bịa | 3 fields trong mọi output JSON |
+| 3 | **HITL review queue** | Log items cần review riêng | `script/review_queue.py` → `output/review-queue.md` |
+| 4 | **Execution log** | Audit trail mọi action | `output/execution_log.jsonl` |
+| 5 | **Hooks** | Prevent edit template/, archive/ | `hooks.json` |
+| 6 | **Anonymizer + anti-injection** | Strip PII/secrets, detect injection | `script/anonymizer.py` |
+| 7 | **skill.json** | Machine-readable metadata | root `skill.json` |
+| 8 | **Unified folder structure** | kb/script/prompt/schema/test/synthetic-data | 6 folders |
+
+### Validator Invocation Pattern
+
+```bash
+# Validate artifact against schema
+python3 script/validator.py --artifact output/foo.json --schema schema/foo.schema.json
+
+# Full pipeline (schema + evidence + confidence + log)
+python3 script/validator.py --run-all --artifact output/foo.json --schema schema/foo.schema.json
+
+# Preflight (hook mode — check before Write/Edit)
+python3 script/validator.py --preflight-target /path/to/file
+
+# Log entry
+python3 script/log_helper.py STEP ACTION TARGET STATUS
+```
+
+### Evidence Schema (áp dụng cho mọi output)
+
+```json
+{
+  "result": "...",
+  "evidence": [
+    {
+      "claim": "Statement được claim",
+      "verbatim_quote": "Nguyên văn trích từ source",
+      "source": "input/brief.md",
+      "location": "line 23"
+    }
+  ],
+  "confidence_score": 0.85,
+  "need_review": false
+}
+```
+
+**Rules:**
+- `confidence_score < 0.7` → auto `need_review = true`
+- `evidence` phải verbatim (không paraphrase) — validator verify
+- Evidence missing → confidence -0.2 per missing item
+
+### Self-Exemplification Reference
+
+Chính vibe-aiworkforce tuân thủ 8 tips. Reference implementation:
+- `kb/skill-conventions.md` — quy ước đầy đủ
+- `kb/quality-standards.md` — SLI/SLO/SLA + confidence thresholds
+- `kb/description-rubric.md` — viết description chuẩn
+- `schema/*.schema.json` — 5 schemas cho outputs
+- `script/validator.py` — implementation tham chiếu
+- `script/anonymizer.py` — implementation tham chiếu
+- `prompt/skill-build-prompt.md` — template build skill mới
+- `prompt/skill-review-prompt.md` — template review skill
+
+---
+
 ## KWSR Folder Structure — BẮT BUỘC CHO MỌI DEPARTMENT
 
 > Model: **K**nowledge → **W**orkflow → **S**kill → **R**ule (KWSR by Nguyen Duy Tung)
@@ -413,6 +507,58 @@ COMPLEX (8+ steps, multiple conditions, external integrations):
 **Critical Path:** [bottleneck step]
 **Automation Potential:** [High / Medium / Low + reason]
 ```
+
+### Step 9: SCHEMA-DRIVEN OUTPUT (NEW — Tip 1, 2)
+
+**Phase A output phải là JSON artifact thỏa schema:**
+
+```bash
+# Output: output/workforce-analysis.json (không chỉ markdown)
+```
+
+**Required fields (per `schema/workforce-analysis.schema.json`):**
+
+```json
+{
+  "task_name": "...",
+  "domain": "...",
+  "complexity": "SIMPLE|MEDIUM|COMPLEX",
+  "frequency": "...",
+  "actors": [{"role": "...", "action": "...", "produces": "..."}],
+  "artifacts": {"inputs": [...], "intermediate": [...], "outputs": [...]},
+  "quality_standards": {"sli": [...], "slo": [...], "sla": [...]},
+  "critical_path": "...",
+  "automation_potential": "High|Medium|Low",
+  "evidence": [
+    {
+      "claim": "Team cần 5 content/tuần",
+      "verbatim_quote": "Hiện tại team tôi xuất 5 bài/tuần",
+      "source": "input/brief.md",
+      "location": "line 12"
+    }
+  ],
+  "confidence_score": 0.85,
+  "need_review": false
+}
+```
+
+**Tại sao:** Schema ép LLM output có cấu trúc → giảm hallucination. Evidence buộc trích dẫn nguyên văn → không bịa. Confidence + need_review trigger auto-review khi low.
+
+**Validate ngay sau khi generate:**
+
+```bash
+python3 script/validator.py --run-all \
+  --artifact output/workforce-analysis.json \
+  --schema schema/workforce-analysis.schema.json \
+  --source input/brief.md
+```
+
+**Nếu fail:**
+- Schema error → fix output structure
+- Evidence missing → re-read source, find verbatim quote OR lower confidence
+- Confidence < 0.7 → auto `need_review = true`, add to `output/review-queue.md`
+
+---
 
 ---
 
@@ -928,6 +1074,74 @@ Con người phải review — không thể automate.
 | MT-04 | User acceptance: end user | Real User | [Steps] | User satisfied ≥ 4/5 |
 ```
 
+### Step C.5: DESIGN SCHEMAS (NEW — Tip 1)
+
+**Cho mỗi artifact trong workflow → tạo JSON schema tương ứng.**
+
+```
+[skill-name]/schema/
+├── [artifact-1].schema.json
+├── [artifact-2].schema.json
+└── README.md (index + examples)
+```
+
+**Bắt buộc:**
+1. Mỗi schema là JSON Schema draft-07
+2. Mỗi schema có required fields: `evidence[]`, `confidence_score`, `need_review`
+3. Reference implementation: `schema/workforce-analysis.schema.json`, `schema/skill-spec.schema.json`
+
+**Pattern schema template:**
+
+```json
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "[Artifact Name]",
+  "type": "object",
+  "required": ["[main_field]", "evidence", "confidence_score", "need_review"],
+  "properties": {
+    "[main_field]": {"type": "string"},
+    "evidence": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["claim", "verbatim_quote", "source"],
+        "properties": {
+          "claim": {"type": "string"},
+          "verbatim_quote": {"type": "string", "minLength": 1},
+          "source": {"type": "string"}
+        }
+      }
+    },
+    "confidence_score": {"type": "number", "minimum": 0, "maximum": 1},
+    "need_review": {"type": "boolean"}
+  }
+}
+```
+
+### Deliverable 5: Schema Bundle (NEW — Tip 1)
+
+**Bundle tất cả schemas vào `schema/` folder của skill:**
+
+```markdown
+## 📐 Schema Bundle: [Project Name]
+
+| # | Schema | Artifact | Validation |
+|---|--------|----------|-----------|
+| 1 | workforce-analysis.schema.json | Phase A output | python3 script/validator.py --run-all |
+| 2 | skill-spec.schema.json | Phase C per-skill spec | python3 script/validator.py --run-all |
+| 3 | workflow-design.schema.json | Phase B/C workflow | python3 script/validator.py --run-all |
+| 4 | execution-log-entry.schema.json | Mỗi dòng execution_log.jsonl | Auto-validate on log |
+| 5 | skill-meta.schema.json | skill.json của mỗi skill | Validate sau Phase E |
+```
+
+**Tại sao Deliverable 5 quan trọng:**
+- Schema = contract giữa các phases
+- Validator = automated QA cho mọi artifact
+- Confidence threshold = auto-gate cho need_review
+- Evidence verification = chống hallucination
+
+---
+
 ---
 
 ## Execution Flow — Khi nhận được task input
@@ -986,10 +1200,13 @@ PHASE F: MKDIR — Hiện thực hóa SOP trên filesystem (BẮT BUỘC)
 → Ghi nhận: Nếu user chưa có org-root path → hỏi 1 câu trước khi tiếp tục
     ↓
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-PHASE E: BUILD (BẮT BUỘC — KHÔNG BỎ QUA)
+PHASE E: BUILD (BẮT BUỘC — KHÔNG BỎ QUA) — 8-COMPONENT BUILD
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 **BÀI HỌC TỪ AINS: Thiết kế 10 AI workers nhưng 0 SKILL.md → công ty không vận hành.**
 **PHASE E = chuyển "thiết kế" thành "callable skills" — BẮT BUỘC.**
+
+**NEW — PHASE E giờ có 8 SUBSTEPS (E.0 → E.7), mỗi substep = 1 trong 8 tips.**
+**Mỗi skill build ra phải có đủ 8 components (xem `kb/skill-conventions.md`).**
 
 → BẮT BUỘC: Xác định SKILL_SAVE_PATH cho mỗi skill trước khi build:
   - CÓ COMPANY_ROOT → [COMPANY_ROOT]/[department]/ai_workforce/[skill-name]/
@@ -999,6 +1216,10 @@ PHASE E: BUILD (BẮT BUỘC — KHÔNG BỎ QUA)
   Batch 1: Orchestrator/GPS skill (P0)
   Batch 2: Core workers (P1)
   Batch 3: Support workers (P2)
+
+────────────────────────────────────────────────────────────────────────
+E.0 BUILD CORE SKILL.MD
+────────────────────────────────────────────────────────────────────────
 
 → For TEMPLATED skills → Write SKILL.md directly (default)
 → For EXPERT-CLONE skills → Invoke /clone-skill-to-vibe-work
@@ -1034,26 +1255,156 @@ PHASE E: BUILD (BẮT BUỘC — KHÔNG BỎ QUA)
   > Cú pháp: "Dùng cho MỌI [domain] — kể cả khi user chỉ nói '[weak signal]'"
 
   **Giới hạn:** 80-250 từ. Tránh keyword dump (<40 từ) và quá dài (>300 từ).
-  Xem thêm: `resources/description-anti-patterns.md` cho 10 lỗi phổ biến.
+  Xem thêm: `kb/description-rubric.md` cho 10 lỗi phổ biến.
 
-→ ALWAYS after building EACH skill:
+────────────────────────────────────────────────────────────────────────
+E.1 SCHEMA LAYER (NEW — Tip 1)
+────────────────────────────────────────────────────────────────────────
+
+→ Tạo folder: [SKILL_SAVE_PATH]/schema/
+→ Cho mỗi output artifact skill sản xuất → tạo [artifact].schema.json
+→ Required fields trong EVERY output schema:
+  - evidence[] (array of {claim, verbatim_quote, source})
+  - confidence_score (number 0-1)
+  - need_review (boolean)
+→ Reference: `schema/workforce-analysis.schema.json` của chính vibe-aiworkforce
+
+→ Tại sao: Schema ép structure → giảm hallucination. LLM biết chính xác field nào cần có.
+
+────────────────────────────────────────────────────────────────────────
+E.2 VALIDATOR LAYER (NEW — Tip 1, 2)
+────────────────────────────────────────────────────────────────────────
+
+→ Tạo file: [SKILL_SAVE_PATH]/script/validator.py
+→ Validator phải support:
+  - --artifact + --schema → JSON validation
+  - --run-all → schema + evidence + confidence + log pipeline
+  - --preflight-target → check path safety (cho hooks)
+  - --log STEP ACTION TARGET STATUS → append execution_log
+→ Reference implementation: `script/validator.py` của vibe-aiworkforce
+→ ZERO external dependencies (stdlib only — json, re, argparse, pathlib)
+
+────────────────────────────────────────────────────────────────────────
+E.3 SKILL.JSON (NEW — Tip 7)
+────────────────────────────────────────────────────────────────────────
+
+→ Tạo file: [SKILL_SAVE_PATH]/skill.json (parallel với SKILL.md)
+→ Must follow: `schema/skill-meta.schema.json`
+→ Must include: name, version, description, phases, dependencies, scripts, hooks
+→ Validate sau khi tạo:
+  ```bash
+  python3 script/validator.py --artifact skill.json --schema schema/skill-meta.schema.json
+  ```
+
+→ Tại sao: Orchestrators có thể parse metadata mà không parse markdown.
+
+────────────────────────────────────────────────────────────────────────
+E.4 ANONYMIZER + ANTI-INJECTION (NEW — Tip 6)
+────────────────────────────────────────────────────────────────────────
+
+→ Tạo file: [SKILL_SAVE_PATH]/script/anonymizer.py
+→ Strip patterns:
+  - Email, phone (VN+US), API keys (sk-, ghp_, xoxb-, AKIA, eyJ)
+  - User paths (/Users/[name]/), credit cards, IPs
+  - JWT tokens
+→ Detect prompt injection:
+  - "Ignore previous instructions", "System:", "<|im_start|>"
+  - Identity rewrite ("you are now a different AI")
+  - Prompt extraction attempts
+→ Test: `python3 script/anonymizer.py --test`
+→ Reference implementation: `script/anonymizer.py`
+
+→ Preflight trước khi process sensitive input:
+  ```bash
+  python3 script/anonymizer.py --input input/brief.md --output processing/anonymized.md
+  ```
+
+────────────────────────────────────────────────────────────────────────
+E.5 HOOKS — PREVENT HARMFUL BEHAVIOR (NEW — Tip 5)
+────────────────────────────────────────────────────────────────────────
+
+→ Tạo file: [SKILL_SAVE_PATH]/hooks.json
+→ PreToolUse hook trên Write|Edit:
+  - Block writes vào template/ folder (SOP state machine integrity)
+  - Block writes vào archive/ folder (immutable history)
+  - Block writes outside allowlist (output/, processing/, input/)
+→ PostToolUse hook trên Write:
+  - Log entry tự động vào execution_log.jsonl
+→ Install script: `bash script/install_hooks.sh`
+
+→ Hook config template:
+  ```json
+  {
+    "hooks": {
+      "PreToolUse": [{
+        "matcher": "Write|Edit",
+        "hooks": [{"type": "command",
+                   "command": "python3 script/validator.py --preflight-target $FILE"}]
+      }]
+    }
+  }
+  ```
+
+────────────────────────────────────────────────────────────────────────
+E.6 EXECUTION LOG (NEW — Tip 4)
+────────────────────────────────────────────────────────────────────────
+
+→ Convention: mọi action append vào output/execution_log.jsonl
+→ Mỗi entry: {timestamp, step, action, target, actor, status, duration_ms,
+               schema_validated, evidence_verified}
+→ Helper: `python3 script/log_helper.py STEP ACTION TARGET STATUS`
+→ Schema: `schema/execution-log-entry.schema.json`
+
+→ Tại sao: Audit trail. Nếu output sai → trace lại được step nào, action nào, khi nào.
+
+────────────────────────────────────────────────────────────────────────
+E.7 EVIDENCE VALIDATION (NEW — Tip 2, 3)
+────────────────────────────────────────────────────────────────────────
+
+→ Sau mỗi step output, chạy validator với --run-all:
+  ```bash
+  python3 script/validator.py --run-all \
+    --artifact output/[step-output].json \
+    --schema schema/[step-output].schema.json \
+    --source input/[source-file]
+  ```
+
+→ Auto-flag need_review khi:
+  - confidence_score < 0.7
+  - Evidence verbatim_quote không tìm thấy trong source
+  - Schema validation fail
+
+→ Auto-collect vào review queue:
+  ```bash
+  python3 script/review_queue.py --collect
+  ```
+  → Output: output/review-queue.md với items cần human review
+
+────────────────────────────────────────────────────────────────────────
+FINAL: BUILD COMPLETION PER SKILL
+────────────────────────────────────────────────────────────────────────
+
+→ ALWAYS after building EACH skill (full 8-component check):
   1. SAVE SKILL.md to SKILL_SAVE_PATH (PRIMARY — within company folder)
-  2. INSTALL: copy to ~/.claude/skills/[skill-name]/
+  2. SAVE skill.json, schema/, script/, kb/, prompt/, test/, synthetic-data/
+  3. INSTALL: copy to ~/.claude/skills/[skill-name]/
      → mkdir -p ~/.claude/skills/[skill-name]
      → cp -R [SKILL_SAVE_PATH]/* ~/.claude/skills/[skill-name]/
-  3. VERIFY: test -f ~/.claude/skills/[skill-name]/SKILL.md
-  4. LOG: "[OK] [skill-name] built + installed"
-  5. UPDATE [department]/ai_workforce/README.md với skill status
-  6. TRIGGER VALIDATION — test description có trigger đúng không:
+  4. VERIFY structure: ls ~/.claude/skills/[skill-name]/
+     → Must have: SKILL.md, skill.json, kb/, script/, prompt/, schema/, test/, synthetic-data/
+  5. VERIFY schemas: python3 script/validator.py --artifact skill.json --schema schema/skill-meta.schema.json
+  6. LOG: "[OK] [skill-name] built + installed (8 components)"
+  7. UPDATE [department]/ai_workforce/README.md với skill status
+  8. TRIGGER VALIDATION — test description có trigger đúng không:
      → Tạo 3-5 "should trigger" queries (câu lệnh thực tế mà skill phải kích hoạt)
      → Tạo 3-5 "should NOT trigger" queries (câu bẫy — gần giống nhưng thuộc skill khác)
-     → Nếu test fail → sửa description theo resources/description-anti-patterns.md
+     → Nếu test fail → sửa description theo kb/description-rubric.md
      → Quick check: đọc description rồi tưởng tượng user gõ bằng tiếng Việt thường → có match không?
 
 → AFTER ALL SKILLS BUILT — SOP-TO-SKILL COVERAGE GATE (BẮT BUỘC):
   1. Liệt kê TẤT CẢ SOPs (từ Phase F + SOP register)
   2. Kiểm tra MỖI SOP có AI Worker skill gán:
-     | SOP Code | SOP Name | AI Worker Skill | SKILL.md? | Installed? |
+     | SOP Code | SOP Name | AI Worker Skill | SKILL.md? | Installed? | 8 Components? |
   3. COUNT: Total SOPs / Covered SOPs
   4. IF coverage < 100% → BUILD thêm → re-check → LOOP
   5. IF coverage = 100% → GATE PASS
@@ -1062,6 +1413,7 @@ PHASE E: BUILD (BẮT BUỘC — KHÔNG BỎ QUA)
   → ls ~/.claude/skills/vibe-[company]-* → so với planned workers
   → Output: Build Completion Report
     - Total planned: [N] | Built: [N] | Installed: [N]
+    - 8-component compliant: [N]/[N]
     - SOP coverage: [X/Y = Z%]
     - Gaps (if any): [list]
     - REGISTRY EXTRACTION cho mỗi skill (bàn giao):
@@ -1074,7 +1426,13 @@ PHASE E: BUILD (BẮT BUỘC — KHÔNG BỎ QUA)
       ```text
       [skill-name]/
       ├── SKILL.md
-      └── resources/ (if any)
+      ├── skill.json
+      ├── kb/
+      ├── script/
+      ├── prompt/
+      ├── schema/
+      ├── test/
+      └── synthetic-data/
       ```
 ```
 
@@ -1122,7 +1480,7 @@ Check trước khi tạo mới:
   - vibe-gps         → orchestration, problem solving
   - deep-research    → research tasks
   - vibe-overview    → synthesis, summarization
-  - ai-humanizer     → document formatting
+  - vibe-humanizer     → document formatting
   - vibe-user-review → user feedback collection (persona-only, subset của vibe-review)
   - clone-skill-to-vibe-work → khi cần expert-level quality cho skill mới
 
@@ -1561,6 +1919,24 @@ Trước khi output, self-check:
 □ Input file naming convention đã được document: [YYYY-MM-DD]-[descriptor].ext?
 □ Workflow có [AUTO-ARCHIVE] node trước [END] nếu có output/?
 □ SOPs hiện tại đã được migrate (nếu là cải tiến workforce có sẵn)?
+
+── 8 Mandatory Components (NEW — Tip 1-8) ─────────────────────────────
+□ skill.json tồn tại + pass schema/skill-meta.schema.json?
+□ schema/ folder có ít nhất 1 schema cho output chính?
+□ Mọi output schema có required: evidence[], confidence_score, need_review?
+□ script/validator.py tồn tại + `python3 script/validator.py --help` chạy được?
+□ script/anonymizer.py tồn tại + test patterns pass?
+□ script/log_helper.py tồn tại + log entry tạo được?
+□ script/review_queue.py tồn tại + collect được?
+□ script/install_hooks.sh tồn tại + execute được?
+□ hooks.json tồn tại + cấu hình PreToolUse cho Write|Edit?
+□ kb/ folder có knowledge files (rubrics, references)?
+□ prompt/ folder có reusable prompts?
+□ test/ folder có smoke-test.md + trigger-validation.md?
+□ synthetic-data/ folder có sample inputs để test?
+□ Validator có verify evidence verbatim_quote tồn tại trong source?
+□ Validator auto-flag need_review=true khi confidence < 0.7?
+□ Execution log convention được document + script/log_helper.py available?
 ```
 
 ---
@@ -1625,7 +2001,19 @@ Trước khi output, self-check:
 ❌ Dùng flat structure (mọi SOP cùng 1 folder) khi > 5 SOPs → không scale
 ❌ Không có ai-draft/ và human-review/ trong processing/ → không rõ file đang ở giai đoạn nào
 ❌ Không migrate SOPs hiện tại → 2 hệ thống tồn tại song song → inconsistency
-❌ Tạo thêm subfolder tùy tiện (vd: temp/, misc/, wip/) → phá vỡ state machine convention
+❌ Tạo thêm subfolder tùy ý (vd: temp/, misc/, wip/) → phá vỡ state machine convention
+
+── 8 Components Anti-patterns (NEW — Tip 1-8) ─────────────────────────────
+❌ Build skill mà KHÔNG có schema/ → output không có contract, hallucination không detect được
+❌ Schema không required evidence[] → AI có thể bịa claim mà không cần trích dẫn
+❌ confidence_score luôn = 0.99 → không có quality signal, review queue luôn empty
+❌ Validator require external packages → fail khi deploy môi trường sạch
+❌ Hooks KHÔNG block template/ → SOP source of truth bị nhiễm
+❌ Anonymizer miss JWT pattern → token leak vào log
+❌ KHÔNG detect "Ignore previous instructions" → prompt injection thành công
+❌ skill.json sai schema → orchestrator parse fail → skill không invoke được
+❌ Execution log optional → mất audit trail, không trace được bug
+❌ Build skill mới mà KHÔNG copy 8 components từ vibe-aiworkforce → inconsistency
 ```
 
 ---
@@ -1637,4 +2025,24 @@ Trước khi output, self-check:
 
 | File | Mục đích | Khi nào đọc |
 |------|---------|------------|
-| `resources/description-anti-patterns.md` | 10 lỗi phổ biến khi viết description | Phase E — sau khi viết description cho mỗi skill |
+| `resources/description-anti-patterns.md` | 10 lỗi phổ biến khi viết description (legacy) | Phase E — reference cũ |
+| `kb/skill-conventions.md` | 8 mandatory components quy ước đầy đủ | Trước Phase E — hiểu chuẩn build |
+| `kb/quality-standards.md` | SLI/SLO/SLA + confidence thresholds | Phase A — define quality standards |
+| `kb/description-rubric.md` | Viết description chuẩn (4-component formula) | Phase E — sau khi viết description |
+| `schema/workforce-analysis.schema.json` | Schema Phase A output | Phase A — validate output |
+| `schema/skill-spec.schema.json` | Schema Phase C skill spec | Phase C — validate spec |
+| `schema/workflow-design.schema.json` | Schema Phase B/C workflow | Phase C — validate workflow |
+| `schema/skill-meta.schema.json` | Schema skill.json | Phase E.3 — validate metadata |
+| `schema/execution-log-entry.schema.json` | Schema execution log entry | Phase E.6 — validate log |
+| `script/validator.py` | Validator + evidence + confidence checker | Sau mỗi phase — validate output |
+| `script/anonymizer.py` | Strip PII/secrets + detect injection | Phase E.4 — preflight sensitive input |
+| `script/log_helper.py` | Append execution log entry | Mọi action — audit trail |
+| `script/review_queue.py` | Collect items cần review | Khi need_review=true |
+| `script/install_hooks.sh` | Install PreToolUse/PostToolUse hooks | Phase E.5 — setup guardrails |
+| `prompt/skill-build-prompt.md` | Template build skill mới (8 components) | Phase E — invoke khi build |
+| `prompt/skill-review-prompt.md` | Template review skill theo 8 tips | Sau Phase E — verify quality |
+| `test/smoke-test.md` | Quick smoke test (~5 phút) | Sau mỗi lần update skill |
+| `test/trigger-validation.md` | Test description triggers đúng | Phase E — sau khi viết description |
+| `test/schema-validation.test.py` | Pytest suite cho schemas + scripts | CI/CD hoặc pre-merge |
+| `synthetic-data/sample-task-inputs.md` | Sample inputs để test pipeline | Demo / regression test |
+| `skill.json` | Machine-readable metadata của vibe-aiworkforce | Orchestrators parse để integrate |

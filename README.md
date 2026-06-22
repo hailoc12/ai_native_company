@@ -43,9 +43,10 @@ community_version/
 ├── CONTRIBUTING.md              ← Hướng đóng góp
 ├── CHANGELOG.md                 ← Lịch sử thay đổi
 ├── CODE_OF_CONDUCT.md           ← Quy tắc ứng xử
-├── skills/                      ← Claude Skills sẵn dùng
+├── skills/                      ← Claude Skills sẵn dùng (cấu trúc v2.0.0)
 │   ├── vibe-aiworkforce/        ← Skill xây dựng AI Workforce
 │   └── vibe-company-orchestrator/ ← Skill thiết kế toàn bộ công ty
+│   └── (mỗi skill gồm: SKILL.md + skill.json + schema/ + script/ + test/ + kb/ + prompt/ + synthetic-data/)
 ├── docs/                        ← Ebook + tài liệu
 │   ├── ebook/                   ← Ebook đầy đủ (markdown)
 │   ├── docx/                    ← Bản DOCX
@@ -96,6 +97,8 @@ ls ~/.claude/skills/vibe-*/SKILL.md
 
 ## 2 Skill chính
 
+> Từ **v1.1.0**, mỗi skill không chỉ là `SKILL.md` đơn lẻ mà là **package đầy đủ v2.0.0**: schema contract (`schema/`), validator + anonymizer (`script/`), hooks giảm hallucination (`hooks.json`), test suite (`test/`), sample data (`synthetic-data/`), và metadata machine-readable (`skill.json`). Xem [CHANGELOG.md](CHANGELOG.md) để biết chi tiết.
+
 ### 1. vibe-company-orchestrator
 
 **Thiết kế toàn bộ công ty thành hệ thống.**
@@ -104,6 +107,7 @@ ls ~/.claude/skills/vibe-*/SKILL.md
 - 3 Layer Architecture: Chiến lược / Vận hành / Hỗ trợ
 - Từ folder trống → sinh ra toàn bộ company structure + SOP markdown
 - Tích hợp Porter Value Chain, Archimate, IPO, RACI
+- **v2.0**: đồng bộ Schema & Guardrail contract với vibe-aiworkforce — emit `evidence/confidence/need_review` cho OKR + Quality Standards
 
 ### 2. vibe-aiworkforce
 
@@ -113,6 +117,7 @@ ls ~/.claude/skills/vibe-*/SKILL.md
 - 5 Deliverables: Folder Structure + Workflow + Skills + Rules & Tests + SOP State Machine
 - Skill Quality Router: TEMPLATED / EXPERT-CLONE / GPS-ENHANCED
 - Tự động build + install skills vào Claude Code
+- **v2.0**: 7-substep build pipeline (schema → validator → skill.json → anonymizer preflight → hooks → execution log → evidence validation)
 
 ---
 

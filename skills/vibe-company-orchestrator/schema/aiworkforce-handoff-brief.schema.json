@@ -1,0 +1,66 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "aiworkforce-handoff-brief.schema.json",
+  "title": "AI Workforce Handoff Brief",
+  "description": "Contract giữa vibe-company-orchestrator (Phase 6) và vibe-aiworkforce. Đảm bảo brief truyền xuống có đủ thông tin để aiworkforce build skills theo chuẩn 8-component mới (schema, evidence, hooks, skill.json). Ngăn đứt contract parent↔child.",
+  "type": "object",
+  "required": ["company_root", "department", "sop_inputs", "quality_contract", "schema_requirements", "evidence", "confidence_score", "need_review"],
+  "properties": {
+    "company_root": {
+      "type": "string",
+      "description": "Path tuyệt đối tới company folder — BẮT BUỘC, aiworkforce lưu skills tại [company_root]/[dept]/ai_workforce/"
+    },
+    "department": {
+      "type": "string",
+      "description": "Department slug (vd: 02-marketing)"
+    },
+    "sop_inputs": {
+      "type": "array",
+      "minItems": 1,
+      "description": "Danh sách SOP truyền cho aiworkforce — mỗi SOP có path + loại (operational/documentation-only)",
+      "items": {
+        "type": "object",
+        "required": ["sop_code", "path", "type"],
+        "properties": {
+          "sop_code": {"type": "string"},
+          "path": {"type": "string", "description": "template/SOP.md nếu operational, flat file nếu doc-only"},
+          "type": {"type": "string", "enum": ["operational", "documentation-only"]}
+        }
+      }
+    },
+    "quality_contract": {
+      "type": "object",
+      "description": "SLI/SLO mà skills build ra phải đáp ứng — truyền xuống để aiworkforce embed vào rules/ + tests/",
+      "required": ["quality_standards_ref"],
+      "properties": {
+        "quality_standards_ref": {"type": "string", "description": "Path tới quality_[dept]-001 file"},
+        "okr_ref": {"type": "string", "description": "Path tới okr_[dept]-001 file"},
+        "kri_ref": {"type": "string"}
+      }
+    },
+    "schema_requirements": {
+      "type": "object",
+      "description": "Ép aiworkforce build skills có 8 components + schema bundle",
+      "properties": {
+        "require_8_components": {"type": "boolean", "const": true},
+        "require_evidence_confidence": {"type": "boolean", "const": true},
+        "require_hooks": {"type": "boolean", "const": true},
+        "require_skill_json": {"type": "boolean", "const": true}
+      }
+    },
+    "evidence": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["claim", "verbatim_quote", "source"],
+        "properties": {
+          "claim": {"type": "string"},
+          "verbatim_quote": {"type": "string", "minLength": 1},
+          "source": {"type": "string"}
+        }
+      }
+    },
+    "confidence_score": {"type": "number", "minimum": 0, "maximum": 1},
+    "need_review": {"type": "boolean"}
+  }
+}

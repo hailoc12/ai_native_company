@@ -1,0 +1,90 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://vibe-aiworkforce/schema/workforce-analysis.schema.json",
+  "title": "Workforce Analysis (Phase A Output)",
+  "type": "object",
+  "required": ["task_name", "domain", "complexity", "frequency", "actors", "artifacts", "evidence", "confidence_score", "need_review"],
+  "properties": {
+    "task_name": {
+      "type": "string",
+      "minLength": 3,
+      "description": "Short human-readable name of the task being analyzed"
+    },
+    "domain": {
+      "type": "string",
+      "enum": ["Marketing", "Sales", "Ops", "Finance", "HR", "Tech", "Customer Support", "Legal", "Custom"],
+      "description": "Business domain this task belongs to"
+    },
+    "complexity": {
+      "type": "string",
+      "enum": ["SIMPLE", "MEDIUM", "COMPLEX"]
+    },
+    "frequency": {
+      "type": "string",
+      "enum": ["once", "daily", "weekly", "triggered", "real-time"]
+    },
+    "actors": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["role", "action", "produces"],
+        "properties": {
+          "role": {"type": "string"},
+          "action": {"type": "string"},
+          "produces": {"type": "string"}
+        }
+      }
+    },
+    "artifacts": {
+      "type": "object",
+      "required": ["inputs", "outputs"],
+      "properties": {
+        "inputs": {"type": "array", "items": {"type": "string"}},
+        "intermediate": {"type": "array", "items": {"type": "string"}},
+        "outputs": {"type": "array", "items": {"type": "string"}}
+      }
+    },
+    "quality_standards": {
+      "type": "object",
+      "properties": {
+        "sli": {"type": "array", "items": {"type": "string"}},
+        "slo": {"type": "array", "items": {"type": "string"}},
+        "sla": {"type": "array", "items": {"type": "string"}}
+      }
+    },
+    "critical_path": {"type": "string", "description": "Bottleneck step"},
+    "automation_potential": {
+      "type": "string",
+      "enum": ["High", "Medium", "Low"]
+    },
+    "evidence": {
+      "type": "array",
+      "description": "Verbatim quotes supporting analysis claims",
+      "items": {
+        "type": "object",
+        "required": ["claim", "verbatim_quote", "source"],
+        "properties": {
+          "claim": {"type": "string"},
+          "verbatim_quote": {"type": "string", "minLength": 1},
+          "source": {"type": "string", "description": "File path"},
+          "location": {"type": "string", "description": "Line number or section"}
+        }
+      }
+    },
+    "confidence_score": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1,
+      "description": "0-1 score. <0.7 triggers need_review"
+    },
+    "need_review": {
+      "type": "boolean",
+      "description": "True if human review required"
+    },
+    "review_reason": {
+      "type": "string",
+      "description": "Required if need_review=true"
+    }
+  }
+}

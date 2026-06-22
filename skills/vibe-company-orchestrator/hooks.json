@@ -1,0 +1,26 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"${CLAUDE_PROJECT_DIR}/script/validator.py\" --preflight-target \"${CLAUDE_TOOL_INPUT_FILE_PATH:-$TOOL_INPUT}\""
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"${CLAUDE_PROJECT_DIR}/script/validator.py\" --log write \"${CLAUDE_TOOL_INPUT_FILE_PATH:-$TOOL_INPUT}\" success"
+          }
+        ]
+      }
+    ]
+  }
+}

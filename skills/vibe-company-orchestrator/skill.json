@@ -1,0 +1,26 @@
+{
+  "$schema": "./schema/skill-meta.schema.json",
+  "name": "vibe-company-orchestrator",
+  "version": "2.0.0",
+  "type": "skill",
+  "description": "Khởi tạo toàn bộ cấu trúc công ty dưới dạng folder + SOP markdown. Triết lý 'Trần sao âm vậy'. Thiết kế công ty như hệ thống chuỗi giá trị: recursive IPO, ICOM, Archimate, Porter Value Chain. Tích hợp vibe-aiworkforce (build AI workforce), vibe-sop-orchestrator, vibe-xthinking-orchestrator, vibe-review. Từ v2.0: đồng bộ Schema & Guardrail contract với vibe-aiworkforce — emit evidence/confidence/need_review cho OKR + Quality Standards.",
+  "integrations": {
+    "downstream": ["vibe-aiworkforce", "vibe-sop-orchestrator", "vibe-xthinking-orchestrator", "vibe-review"],
+    "schema_contract": {
+      "enforces_8_components_on_children": true,
+      "emits_evidence_confidence": ["company-okr", "department-okr", "kri", "quality-standards"],
+      "handoff_brief_schema": "./schema/aiworkforce-handoff-brief.schema.json"
+    }
+  },
+  "schemas": [
+    "./schema/company-okr.schema.json",
+    "./schema/quality-standards.schema.json",
+    "./schema/aiworkforce-handoff-brief.schema.json"
+  ],
+  "guardrails": {
+    "evidence_required": true,
+    "confidence_threshold": 0.7,
+    "hooks_protected_paths": ["template/", "archive/"],
+    "execution_log": "output/execution_log.jsonl"
+  }
+}

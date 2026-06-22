@@ -137,7 +137,7 @@ Before building a new skill, verify existing skills can't cover it:
 | Web research | `deep-research` |
 | Summarization/synthesis | `vibe-overview` |
 | Problem solving | `vibe-gps` |
-| Document writing | `ai-humanizer` |
+| Document writing | `vibe-humanizer` |
 | User feedback | `vibe-user-review` |
 
 Only build new skill if existing coverage < 70% of needed function.

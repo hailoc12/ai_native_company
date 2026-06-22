@@ -1,0 +1,37 @@
+{
+  "company_root": "/tmp/contoso-saas",
+  "department": "02-marketing",
+  "sop_inputs": [
+    {
+      "sop_code": "SOP-MKT-001",
+      "path": "/tmp/contoso-saas/02-marketing/create-content-linkedin/template/sop_mkt-001.md",
+      "type": "operational"
+    },
+    {
+      "sop_code": "SOP-MKT-002",
+      "path": "/tmp/contoso-saas/02-marketing/analyze-competitor-weekly.md",
+      "type": "documentation-only"
+    }
+  ],
+  "quality_contract": {
+    "quality_standards_ref": "/tmp/contoso-saas/02-marketing/quality_mkt-001_quality-standards_v1.0_2026-06-22.md",
+    "okr_ref": "/tmp/contoso-saas/02-marketing/okr_mkt-001_quarterly-okr_v1.0_2026-06-22.md",
+    "kri_ref": "/tmp/contoso-saas/02-marketing/kri_mkt-001_key-result-indicators_v1.0_2026-06-22.md"
+  },
+  "schema_requirements": {
+    "require_8_components": true,
+    "require_evidence_confidence": true,
+    "require_hooks": true,
+    "require_skill_json": true
+  },
+  "evidence": [
+    {
+      "claim": "Department activated theo priority P1",
+      "verbatim_quote": "activate AI workforce cho marketing + CS trước",
+      "source": "synthetic-data/sample-company-inputs.md",
+      "location": "Goal"
+    }
+  ],
+  "confidence_score": 0.9,
+  "need_review": false
+}

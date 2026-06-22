@@ -1,0 +1,85 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://vibe-aiworkforce/schema/skill-meta.schema.json",
+  "title": "Skill Metadata (skill.json)",
+  "description": "Schema for skill.json — machine-readable companion to SKILL.md",
+  "type": "object",
+  "required": ["name", "version", "description", "phases", "dependencies"],
+  "properties": {
+    "name": {
+      "type": "string",
+      "pattern": "^vibe-[a-z-]+$",
+      "description": "Skill name, must match folder name"
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+(\\.\\d+)?$",
+      "description": "Semantic version"
+    },
+    "description": {
+      "type": "string",
+      "minLength": 80,
+      "maxLength": 300,
+      "description": "Same as SKILL.md frontmatter description"
+    },
+    "phases": {
+      "type": "object",
+      "description": "Workflow phases",
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "inputs": {"type": "array", "items": {"type": "string"}},
+          "outputs": {"type": "array", "items": {"type": "string"}},
+          "schema": {"type": "string", "description": "Path to output JSON schema"},
+          "min_confidence": {"type": "number", "minimum": 0, "maximum": 1},
+          "evidence_required": {"type": "boolean"}
+        }
+      }
+    },
+    "dependencies": {
+      "type": "object",
+      "properties": {
+        "upstream": {"type": "array", "items": {"type": "string"}},
+        "downstream": {"type": "array", "items": {"type": "string"}}
+      }
+    },
+    "quality_gates": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "step": {"type": "string"},
+          "min_confidence": {"type": "number"},
+          "schema_required": {"type": "boolean"},
+          "evidence_required": {"type": "boolean"}
+        }
+      }
+    },
+    "scripts": {
+      "type": "object",
+      "properties": {
+        "validator": {"type": "string"},
+        "anonymizer": {"type": "string"},
+        "install_hooks": {"type": "string"},
+        "log_helper": {"type": "string"},
+        "review_queue": {"type": "string"}
+      }
+    },
+    "hooks": {
+      "type": "object",
+      "description": "Hook configuration for this skill"
+    },
+    "folders": {
+      "type": "object",
+      "description": "Required folders per unified structure",
+      "properties": {
+        "kb": {"type": "boolean"},
+        "script": {"type": "boolean"},
+        "prompt": {"type": "boolean"},
+        "schema": {"type": "boolean"},
+        "test": {"type": "boolean"},
+        "synthetic_data": {"type": "boolean"}
+      }
+    }
+  }
+}
