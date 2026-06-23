@@ -1,6 +1,6 @@
 #!/bin/bash
 # install.sh — Cài đặt tự động AI Native Company skills
-# Hỗ trợ: Claude Code, Antigravity, OpenClaw, Codex
+# Hỗ trợ: Claude Code, Antigravity, OpenClaw, Codex, Hermes
 # Sử dụng: bash src/install.sh [--app <tên-ứng-dụng>]
 
 set -e
@@ -23,6 +23,7 @@ APP_DIRS[claude-code]="$HOME/.claude/skills"
 APP_DIRS[antigravity]="$HOME/.antigravity/skills"
 APP_DIRS[openclaw]="$HOME/.openclaw/skills"
 APP_DIRS[codex]="$HOME/.codex/agents"
+APP_DIRS[hermes]="$HOME/.hermes/skills"
 
 echo ""
 echo -e "${BLUE}═══════════════════════════════════════════════════${NC}"
@@ -71,16 +72,18 @@ if [ -z "$SELECTED_APP" ]; then
   echo "  2) Antigravity"
   echo "  3) OpenClaw"
   echo "  4) Codex (OpenAI)"
-  echo "  5) Tất cả"
+  echo "  5) Hermes"
+  echo "  6) Tất cả"
   echo ""
-  read -p "Nhập lựa chọn [1-5]: " choice
+  read -p "Nhập lựa chọn [1-6]: " choice
 
   case $choice in
     1) SELECTED_APP="claude-code" ;;
     2) SELECTED_APP="antigravity" ;;
     3) SELECTED_APP="openclaw" ;;
     4) SELECTED_APP="codex" ;;
-    5) SELECTED_APP="all" ;;
+    5) SELECTED_APP="hermes" ;;
+    6) SELECTED_APP="all" ;;
     *)
       echo -e "${RED}Lựa chọn không hợp lệ.${NC}"
       exit 1
@@ -110,13 +113,13 @@ install_skills() {
 
 # Execute installation
 if [ "$SELECTED_APP" = "all" ]; then
-  for app in claude-code antigravity openclaw codex; do
+  for app in claude-code antigravity openclaw codex hermes; do
     install_skills "$app" "${APP_DIRS[$app]}"
   done
 else
   if [ -z "${APP_DIRS[$SELECTED_APP]}" ]; then
     echo -e "${RED}Lỗi: Ứng dụng '$SELECTED_APP' không được hỗ trợ.${NC}"
-    echo -e "Các ứng dụng hỗ trợ: claude-code, antigravity, openclaw, codex"
+    echo -e "Các ứng dụng hỗ trợ: claude-code, antigravity, openclaw, codex, hermes"
     exit 1
   fi
   install_skills "$SELECTED_APP" "${APP_DIRS[$SELECTED_APP]}"
@@ -129,7 +132,7 @@ echo -e "${BLUE}  Xác minh cài đặt${NC}"
 echo -e "${BLUE}═══════════════════════════════════════════════════${NC}"
 
 if [ "$SELECTED_APP" = "all" ]; then
-  VERIFY_APPS=("claude-code" "antigravity" "openclaw" "codex")
+  VERIFY_APPS=("claude-code" "antigravity" "openclaw" "codex" "hermes")
 else
   VERIFY_APPS=("$SELECTED_APP")
 fi

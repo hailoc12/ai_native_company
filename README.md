@@ -61,37 +61,103 @@ community_version/
 
 ## Bắt đầu nhanh
 
+Hai skill là **gói chuẩn `SKILL.md`** nên chạy được trên mọi ứng dụng hỗ trợ kỹ năng Claude: **Claude Code, Antigravity, Codex, OpenClaw, Hermes**… Cài đặt chỉ là copy thư mục skill vào đúng vị trí.
+
 ### Yêu cầu
 
-- **Claude Code** (CLI hoặc IDE extension) — [cài đặt tại đây](https://claude.ai/code)
-- **Claude Pro/Max** hoặc API key có Claude Sonnet 4+ trở lên
+| Yêu cầu | Chi tiết |
+|---------|----------|
+| Hệ điều hành | macOS 12+, Linux, hoặc Windows 10/11 (WSL2 / PowerShell) |
+| Git | [cài git](https://git-scm.com/downloads) |
+| Ứng dụng AI | Một trong: Claude Code, Antigravity, Codex, OpenClaw, Hermes |
+| Mô hình | Khuyến nghị Claude Sonnet 4+ (hoặc mô hình tương đương có hỗ trợ tool use / skills) |
 
-### Cài đặt Skills
+### Cài đặt nhanh (1 lệnh)
+
+Repo đi kèm script tự động — hỏi bạn chọn ứng dụng rồi copy skills vào đúng thư mục.
+
+**macOS / Linux:**
 
 ```bash
-# 1. Clone repo
-git clone https://github.com/your-org/ai_native_company.git
+git clone https://github.com/hailoc12/ai_native_company.git
 cd ai_native_company/community_version
+bash src/install.sh                 # script hỏi bạn chọn ứng dụng
+# hoặc cài thẳng cho 1 ứng dụng:
+bash src/install.sh --app claude-code
+```
 
-# 2. Copy skills vào Claude Code skills folder
+**Windows (PowerShell):**
+
+```powershell
+git clone https://github.com/hailoc12/ai_native_company.git
+cd ai_native_company\community_version
+powershell -ExecutionPolicy Bypass -File src\install.ps1
+powershell -ExecutionPolicy Bypass -File src\install.ps1 -App claude-code
+```
+
+### Cài đặt thủ công theo ứng dụng
+
+Mỗi ứng dụng lưu skills ở một thư mục riêng. Copy cả 2 thư mục `skills/vibe-aiworkforce` và `skills/vibe-company-orchestrator` vào thư mục tương ứng:
+
+| Ứng dụng | Thư mục skills (macOS/Linux) | Thư mục skills (Windows) |
+|----------|------------------------------|--------------------------|
+| **Claude Code** | `~/.claude/skills/` | `%USERPROFILE%\.claude\skills\` |
+| **Antigravity** | `~/.antigravity/skills/` | `%USERPROFILE%\.antigravity\skills\` |
+| **Codex (OpenAI)** | `~/.codex/agents/` | `%USERPROFILE%\.codex\agents\` |
+| **OpenClaw** | `~/.openclaw/skills/` | `%USERPROFILE%\.openclaw\skills\` |
+| **Hermes** | `~/.hermes/skills/` | `%USERPROFILE%\.hermes\skills\` |
+
+Ví dụ Claude Code trên macOS/Linux:
+
+```bash
+mkdir -p ~/.claude/skills
 cp -r skills/vibe-aiworkforce ~/.claude/skills/
 cp -r skills/vibe-company-orchestrator ~/.claude/skills/
+```
 
-# 3. Xác minh
+> **Lưu ý:** Một số ứng dụng (Antigravity, Hermes) có thể đổi vị trí thư mục theo phiên bản. Nếu skill không xuất hiện, xem hướng dẫn chi tiết tại [`docs/install-guide.md`](docs/install-guide.md).
+
+### Xác minh cài đặt
+
+```bash
+# Phải thấy file SKILL.md trong cả 2 thư mục
 ls ~/.claude/skills/vibe-*/SKILL.md
 ```
 
+Sau đó khởi động lại ứng dụng AI, gõ:
+
+```
+/vibe-company-orchestrator
+```
+
+Nếu skill phản hồi → cài đặt thành công.
+
 ### Sử dụng đầu tiên
 
-```
-# Trong Claude Code, gõ:
+Hai skill dùng theo thứ tự: **thiết kế công ty trước, rồi mới xây nhân sự số cho từng phòng ban.**
 
+**Bước 1 — Thiết kế công ty** (chạy trong folder trống):
+
+```
 /vibe-company-orchestrator
-→ Mô tả công ty của bạn → Skill sẽ tạo toàn bộ folder structure + SOP
-
-/vibe-aiworkforce
-→ Mô tả task cần tự động hóa → Skill sẽ thiết kế AI Workforce
+→ Mô tả công ty (ngành, quy mô, mục tiêu)
+→ Skill sinh ra toàn bộ cấu trúc: phòng ban, charter, OKR, SOP, RACI, quality standards
 ```
+
+**Bước 2 — Xây AI Workforce cho từng phòng ban:**
+
+```
+/vibe-aiworkforce
+→ Chỉ định COMPANY_ROOT (folder công ty vừa tạo) + mô tả task
+→ Skill thiết kế nhân sự số: folder KWSR, workflow, skills, rules & tests, SOP state machine
+→ Tự động build và cài skill con vào Claude Code
+```
+
+**Bước 3 — Vận hành:**
+
+Mỗi SOP giờ là một state machine (`template → input → processing → output → archive`). Giao việc vào `input/`, AI chạy ở `processing/`, kết quả ra `output/`, lưu trữ ở `archive/`. Con người chỉ giám sát qua execution log và review queue.
+
+> Đầy đủ ví dụ thực tế (công ty mẫu AINS, second brain mẫu) nằm trong [`examples/`](examples/) và ebook [`docs/ebook/`](docs/ebook/).
 
 ---
 

@@ -1,5 +1,5 @@
 # install.ps1 — Cài đặt tự động AI Native Company skills trên Windows
-# Hỗ trợ: Claude Code, Antigravity, OpenClaw, Codex
+# Hỗ trợ: Claude Code, Antigravity, OpenClaw, Codex, Hermes
 # Sử dụng: powershell -ExecutionPolicy Bypass -File src\install.ps1 [-App <tên-ứng-dụng>]
 
 param(
@@ -19,6 +19,7 @@ $AppDirs = @{
     "antigravity" = "$env:USERPROFILE\.antigravity\skills"
     "openclaw"    = "$env:USERPROFILE\.openclaw\skills"
     "codex"       = "$env:USERPROFILE\.codex\agents"
+    "hermes"      = "$env:USERPROFILE\.hermes\skills"
 }
 
 Write-Host ""
@@ -63,16 +64,18 @@ if ([string]::IsNullOrEmpty($App)) {
     Write-Host "  2) Antigravity"
     Write-Host "  3) OpenClaw"
     Write-Host "  4) Codex (OpenAI)"
-    Write-Host "  5) Tất cả"
+    Write-Host "  5) Hermes"
+    Write-Host "  6) Tất cả"
     Write-Host ""
-    $choice = Read-Host "Nhập lựa chọn [1-5]"
+    $choice = Read-Host "Nhập lựa chọn [1-6]"
 
     switch ($choice) {
         "1" { $App = "claude-code" }
         "2" { $App = "antigravity" }
         "3" { $App = "openclaw" }
         "4" { $App = "codex" }
-        "5" { $App = "all" }
+        "5" { $App = "hermes" }
+        "6" { $App = "all" }
         default {
             Write-Host "Lựa chọn không hợp lệ." -ForegroundColor Red
             exit 1
@@ -114,7 +117,7 @@ if ($App -eq "all") {
 } else {
     if (-not $AppDirs.ContainsKey($App)) {
         Write-Host "Lỗi: Ứng dụng '$App' không được hỗ trợ." -ForegroundColor Red
-        Write-Host "Các ứng dụng hỗ trợ: claude-code, antigravity, openclaw, codex"
+        Write-Host "Các ứng dụng hỗ trợ: claude-code, antigravity, openclaw, codex, hermes"
         exit 1
     }
     Install-Skills -AppName $App -DestDir $AppDirs[$App]
@@ -127,7 +130,7 @@ Write-Host "  Xác minh cài đặt" -ForegroundColor Blue
 Write-Host "===================================================" -ForegroundColor Blue
 
 if ($App -eq "all") {
-    $VerifyApps = @("claude-code", "antigravity", "openclaw", "codex")
+    $VerifyApps = @("claude-code", "antigravity", "openclaw", "codex", "hermes")
 } else {
     $VerifyApps = @($App)
 }

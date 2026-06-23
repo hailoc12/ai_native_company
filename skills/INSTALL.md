@@ -18,7 +18,7 @@ Skills trong folder này được thiết kế cho **Claude Code** — CLI tool 
 
 ```bash
 # 1. Clone repo
-git clone https://github.com/your-org/ai_native_company.git
+git clone https://github.com/hailoc12/ai_native_company.git
 cd ai_native_company/community_version
 
 # 2. Copy TẤT CẢ skills vào Claude Code

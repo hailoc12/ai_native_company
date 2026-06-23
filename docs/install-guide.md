@@ -1,6 +1,6 @@
 # Hướng dẫn cài đặt AI Native Company Community Edition
 
-Hướng dẫn cài đặt skills trên **macOS** và **Windows**, cho 4 ứng dụng phổ biến: Claude Code, Antigravity, OpenClaw, Codex.
+Hướng dẫn cài đặt skills trên **macOS** và **Windows**, cho 5 ứng dụng phổ biến: Claude Code, Antigravity, OpenClaw, Codex, Hermes.
 
 ---
 
@@ -10,7 +10,7 @@ Hướng dẫn cài đặt skills trên **macOS** và **Windows**, cho 4 ứng d
 |---------|----------|
 | Hệ điều hành | macOS 12+ hoặc Windows 10/11 (WSL2) |
 | Git | [cài đặt git](https://git-scm.com/downloads) |
-| Ứng dụng AI | Claude Code, Antigravity, OpenClaw, hoặc Codex |
+| Ứng dụng AI | Claude Code, Antigravity, OpenClaw, Codex, hoặc Hermes |
 
 ---
 
@@ -20,7 +20,7 @@ Hướng dẫn cài đặt skills trên **macOS** và **Windows**, cho 4 ứng d
 
 ```bash
 # Clone repo
-git clone https://github.com/your-org/ai_native_company.git
+git clone https://github.com/hailoc12/ai_native_company.git
 cd ai_native_company/community_version
 
 # Chạy script cài đặt tự động
@@ -33,7 +33,7 @@ Script sẽ hỏi bạn chọn ứng dụng cần cài, rồi tự động copy 
 
 ```powershell
 # Clone repo
-git clone https://github.com/your-org/ai_native_company.git
+git clone https://github.com/hailoc12/ai_native_company.git
 cd ai_native_company\community_version
 
 # Chạy script cài đặt tự động
@@ -49,7 +49,7 @@ powershell -ExecutionPolicy Bypass -File src\install.ps1
 **macOS / Linux:**
 ```bash
 # Clone repo
-git clone https://github.com/your-org/ai_native_company.git
+git clone https://github.com/hailoc12/ai_native_company.git
 cd ai_native_company/community_version
 
 # Copy skills
@@ -64,7 +64,7 @@ ls ~/.claude/skills/vibe-*/SKILL.md
 **Windows (WSL2 hoặc Git Bash):**
 ```bash
 # Clone repo
-git clone https://github.com/your-org/ai_native_company.git
+git clone https://github.com/hailoc12/ai_native_company.git
 cd ai_native_company/community_version
 
 # Copy skills
@@ -79,7 +79,7 @@ ls ~/.claude/skills/vibe-*/SKILL.md
 **Windows (PowerShell):**
 ```powershell
 # Clone repo
-git clone https://github.com/your-org/ai_native_company.git
+git clone https://github.com/hailoc12/ai_native_company.git
 cd ai_native_company\community_version
 
 # Copy skills
@@ -157,6 +157,29 @@ New-Item -ItemType Directory -Force -Path $agentsDir
 Copy-Item -Recurse -Force "skills\vibe-aiworkforce" $agentsDir
 Copy-Item -Recurse -Force "skills\vibe-company-orchestrator" $agentsDir
 ```
+
+---
+
+### 5. Hermes
+
+Hermes lưu skills tại `~/.hermes/skills/` (macOS/Linux) hoặc `%USERPROFILE%\.hermes\skills\` (Windows).
+
+**macOS / Linux:**
+```bash
+mkdir -p ~/.hermes/skills
+cp -r skills/vibe-aiworkforce ~/.hermes/skills/
+cp -r skills/vibe-company-orchestrator ~/.hermes/skills/
+```
+
+**Windows (PowerShell):**
+```powershell
+$skillsDir = "$env:USERPROFILE\.hermes\skills"
+New-Item -ItemType Directory -Force -Path $skillsDir
+Copy-Item -Recurse -Force "skills\vibe-aiworkforce" $skillsDir
+Copy-Item -Recurse -Force "skills\vibe-company-orchestrator" $skillsDir
+```
+
+> **Lưu ý:** Đường dẫn thư mục skills có thể thay đổi theo phiên bản Hermes. Kiểm tra tài liệu chính thức của Hermes nếu script không hoạt động.
 
 ---
 
